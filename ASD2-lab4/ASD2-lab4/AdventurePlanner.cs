@@ -117,7 +117,7 @@ namespace ASD
 
             //reconstruct path
             int x = tmpMaxTreasure.GetLength(0) - 1, y = tmpMaxTreasure.GetLength(1) - 1;
-            while (tmpPath[x, y].X != -1 || tmpPath[x, y].Y != -1)
+            while (tmpPath[x, y].X != -1 || tmpPath[x, y].Y != -1)  //TODO: only one condition should be enough
             {
                 Point point = tmpPath[x, y];
                 points.Push(point);
@@ -125,7 +125,7 @@ namespace ASD
             }
 
             //path.Add(new Point(0, 0));
-            while(points.Count > 0)
+            while(points.Count > 0) //TODO: probably too much, add to list and then reverse (?)y
             {
                 path.Add(points.Pop());
             }
@@ -153,29 +153,80 @@ namespace ASD
         /// <returns></returns>
         public int FindPathThereAndBack(int[,] treasure, out List<Point> path)
         {
-            List < Point > path1 = new List<Point>();
-            int[,] tmpTreasure;
-            int value1 = FindPathThere(treasure, out path1, out tmpTreasure);
-
-            int ind = 0;
-            while(path1.Count > ind)
+            int n = treasure.GetLength(0);
+            int m = treasure.GetLength(1);
+            int[,] v = new int[n,n];
+            for (int i = 1; i <= m + n - 2; i++)
             {
-                Point point = path1[ind++];
-                tmpTreasure[point.X, point.Y] = 0;
+                int[,] x = new int[n,n];
+                int min = Math.Max(0, i - (m - 1));
+                int max = Math.Min(n - 1, i);
+                for (int a = min; a <= max; a++)
+                {
+                    int sa = treasure[a, i - a];//level[a].charAt(i - a) - '0';
+                    for (int b = min; b <= max; b++)
+                    {
+                        int sb = sa;
+                        if (b != a)
+                        {
+                            sb += treasure[b, i - b];//level[b].charAt(i - b) - '0';
+                        }
+                        //int best = -1;
+                        int best = Int32.MinValue;
+                        if (a > 0)
+                        {
+                            if (b > 0)
+                            {
+                                if (v[a - 1,b - 1] > best)
+                                {
+                                    best = v[a - 1,b - 1];
+                                }
+                            }
+                            if (v[a - 1,b] > best)
+                            {
+                                best = v[a - 1,b];
+                            }
+                        }
+                        if (b > 0)
+                        {
+                            if (v[a,b - 1] > best)
+                            {
+                                best = v[a,b - 1];
+                            }
+                        }
+                        if (v[a,b] > best)
+                        {
+                            best = v[a,b];
+                        }
+                        x[a,b] = best + sb;
+                    }
+                }
+                v = x;
             }
 
-            int max = 0;
+            //List < Point > path1 = new List<Point>();
+            //int[,] tmpTreasure;
+            //int value1 = FindPathThere(treasure, out path1, out tmpTreasure);
 
-            if (tmpTreasure.GetLength(0) > 1 && tmpTreasure[tmpTreasure.GetLength(0) - 2, tmpTreasure.GetLength(1) - 1] > max)
-                max = tmpTreasure[tmpTreasure.GetLength(0) - 2, tmpTreasure.GetLength(1) - 1];
+            //int ind = 0;
+            //while(path1.Count > ind)
+            //{
+            //    Point point = path1[ind++];
+            //    tmpTreasure[point.X, point.Y] = 0;
+            //}
 
-            if (tmpTreasure.GetLength(1) > 1 && tmpTreasure[tmpTreasure.GetLength(0) - 1, tmpTreasure.GetLength(1) - 2] > max)
-                max = tmpTreasure[tmpTreasure.GetLength(0) - 1, tmpTreasure.GetLength(1) - 2];
+            //int max = 0;
+
+            //if (tmpTreasure.GetLength(0) > 1 && tmpTreasure[tmpTreasure.GetLength(0) - 2, tmpTreasure.GetLength(1) - 1] > max)
+            //    max = tmpTreasure[tmpTreasure.GetLength(0) - 2, tmpTreasure.GetLength(1) - 1];
+
+            //if (tmpTreasure.GetLength(1) > 1 && tmpTreasure[tmpTreasure.GetLength(0) - 1, tmpTreasure.GetLength(1) - 2] > max)
+                //max = tmpTreasure[tmpTreasure.GetLength(0) - 1, tmpTreasure.GetLength(1) - 2];
 
 
             path = new List<Point>();
             path.Add(new Point());
-            return max + value1;
+            return v[n - 1,n - 1] + treasure[0,0];
         }
     }
 }
