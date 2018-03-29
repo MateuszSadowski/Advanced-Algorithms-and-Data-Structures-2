@@ -163,15 +163,14 @@ namespace ASD
                 int max = Math.Min(n - 1, i);
                 for (int a = min; a <= max; a++)
                 {
-                    int sa = treasure[a, i - a];//level[a].charAt(i - a) - '0';
+                    int sa = treasure[a, i - a];
                     for (int b = min; b <= max; b++)
                     {
                         int sb = sa;
                         if (b != a)
                         {
-                            sb += treasure[b, i - b];//level[b].charAt(i - b) - '0';
+                            sb += treasure[b, i - b];
                         }
-                        //int best = -1;
                         int best = Int32.MinValue;
                         if (a > 0)
                         {
