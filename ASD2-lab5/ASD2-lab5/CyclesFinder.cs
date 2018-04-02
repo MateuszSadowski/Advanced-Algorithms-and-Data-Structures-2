@@ -20,7 +20,7 @@ namespace ASD
             }
             int cc = 0;
             GeneralSearchGraphExtender.GeneralSearchAll<EdgesStack>(g, null, null, null, out cc);
-            //TODO: dla grafów z wiecej niz jedna skladowa??
+
             return g.EdgesCount == g.VerticesCount - 1 && cc == 1;
         }
 
@@ -39,11 +39,18 @@ namespace ASD
                 throw new ArgumentException();
             }
 
-            GraphExport ge = new GraphExport();
-            ge.Export(g);
-            ge.Export(t);
+            //TODO: for debugging purpouses, to remove later
+            //GraphExport ge = new GraphExport();
+            //ge.Export(g);
+            //ge.Export(t);
 
-            List<Edge> treeEdgeList = new List<Edge>();
+            //check if t is correct spanning tree for g
+            if(!IsTree(t) || t.VerticesCount != g.VerticesCount)
+            {
+                throw new ArgumentException();
+            }
+
+            HashSet<Edge> treeEdgeList = new HashSet<Edge>();
             for (int v = 0; v < t.VerticesCount; v++)
             {
                 foreach (var e in t.OutEdges(v))
@@ -57,28 +64,26 @@ namespace ASD
             Edge[] cycle;
             Edge outEdge;
             int outsideEdgesCount = g.EdgesCount - t.EdgesCount;
-            //Edge lastOutEdge = new Edge();
-            //bool addLastEdge = false;
+            Stack<Edge> tmpEdgesDeleted = new Stack<Edge>();
 
             while (outsideEdgesCount > 0)
             {
-                //if(addLastEdge)
-                //{
-                //    h.Add(lastOutEdge);
-                //}
-                FindFundamentalCycle(h, treeEdgeList, out cycle, out outEdge);
-                if(null != cycle)
-                {
+                if(!FindFundamentalCycle(h, treeEdgeList, out cycle, out outEdge))
+                {   //have not found correct fundemental cycle in this iteration
+                    tmpEdgesDeleted.Push(outEdge);  //delete and remember the second outside edge found
+                    h.DelEdge(outEdge);
+                    continue;   //try again without that edge
+                }
+                else
+                {   //have found correct fundamental cycle
                     cycles.Push(cycle);
                     h.DelEdge(outEdge);
                     outsideEdgesCount--;
+                    while(tmpEdgesDeleted.Count > 0)
+                    {   //restore previously deleted (unused) edges
+                        h.AddEdge(tmpEdgesDeleted.Pop());
+                    }
                 }
-                //else
-                //{
-                //    addLastEdge = true;
-                //    lastOutEdge = outEdge;
-                //    h.DelEdge(outEdge);
-                //}
             }
 
             Edge[][] result = new Edge[cycles.Count][];
@@ -92,7 +97,7 @@ namespace ASD
             return result;
         }
 
-        public bool FindFundamentalCycle(Graph g, List<Edge> treeEdgeList, out Edge[] cycle, out Edge outsideEdge)
+        public bool FindFundamentalCycle(Graph g, HashSet<Edge> treeEdgeList, out Edge[] cycle, out Edge outsideEdge)
         {
             int[] visited = new int[g.VerticesCount]; // 0 - nieodwiedzony, 1 - szary, 2 - czarny
             int[] from = new int[g.VerticesCount];
@@ -100,11 +105,11 @@ namespace ASD
             cycle = new Edge[g.VerticesCount];
             bool hasCycle = false;
             int cycleEnd = -1;
-            //int cc;
+            int cc;
             int outOfTreeEdgeCount = 0;
             Edge outEdge = new Edge();
-            Random rand = new Random();
-            int s = rand.Next(0, g.VerticesCount);
+            //Random rand = new Random();
+            //int s = rand.Next(0, g.VerticesCount);
 
             Predicate<int> preVertex = delegate (int v)
             {
@@ -125,9 +130,11 @@ namespace ASD
             Predicate<Edge> visitEdge = delegate (Edge e)
             {
                 if (!g.Directed && from[e.From] == e.To)
+                {   //undirected graps are implemented as directed graphs with edges both ways
                     return true;
+                }
 
-                if(!treeEdgeList.Contains(e))
+                if (!treeEdgeList.Contains(e))
                 {
                     if(e.From != outEdge.To || e.To != outEdge.From)
                     {
@@ -137,7 +144,7 @@ namespace ASD
                 }
 
                 if(outOfTreeEdgeCount > 1)
-                {
+                {   //got 2 edges not contained in the spanning tree
                     return false;
                 }
 
@@ -154,8 +161,11 @@ namespace ASD
                 return true;
             };
 
-            g.GeneralSearchFrom<EdgesStack>(s, preVertex, postVertex, visitEdge);
+            //g.GeneralSearchFrom<EdgesStack>(s, preVertex, postVertex, visitEdge);
+            //search for cycle
+            g.GeneralSearchAll<EdgesStack>(preVertex, postVertex, visitEdge, out cc);
 
+            //reconstruct cycle
             if (hasCycle)
             {
                 int i = 0;
@@ -182,7 +192,7 @@ namespace ASD
                 return true;
             }
 
-            //outsideEdge = new Edge(-1, -1, -1);
+            //there was no cycle found
             outsideEdge = outEdge;
             cycle = null;
             return false;
