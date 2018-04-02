@@ -5,6 +5,30 @@ using System.Linq;
 
 namespace ASD
 {
+    internal class CycleFinderData
+    {
+        public int[] visited;
+        public int[] from;
+        public EdgesStack edges;
+        public Edge[] cycle;
+        public bool hasCycle;
+        public int cycleEnd;
+        public int outOfTreeEdgeCount;
+        public Edge outEdge;
+
+        internal CycleFinderData(Graph g)
+        {
+            visited = new int[g.VerticesCount];
+            from = new int[g.VerticesCount];
+            edges = new EdgesStack();
+            cycle = new Edge[g.VerticesCount];
+            hasCycle = false;
+            cycleEnd = -1;
+            outOfTreeEdgeCount = 0;
+            outEdge = new Edge();
+        }
+    }
+
     public class CyclesFinder : MarshalByRefObject
     {
         /// <summary>
@@ -45,7 +69,7 @@ namespace ASD
             //ge.Export(t);
 
             //check if t is correct spanning tree for g
-            if(!IsTree(t) || t.VerticesCount != g.VerticesCount)
+            if (!IsTree(t) || t.VerticesCount != g.VerticesCount)
             {
                 throw new ArgumentException();
             }
@@ -64,27 +88,34 @@ namespace ASD
             Edge[] cycle;
             Edge outEdge;
             int outsideEdgesCount = g.EdgesCount - t.EdgesCount;
-            Stack<Edge> tmpEdgesDeleted = new Stack<Edge>();
+            //Stack<Edge> tmpEdgesDeleted = new Stack<Edge>();
 
             while (outsideEdgesCount > 0)
             {
-                if(!FindFundamentalCycle(h, treeEdgeList, out cycle, out outEdge))
-                {   //have not found correct fundemental cycle in this iteration
-                    tmpEdgesDeleted.Push(outEdge);  //delete and remember the second outside edge found
-                    h.DelEdge(outEdge);
-                    continue;   //try again without that edge
-                }
-                else
+                //if(!FindFundamentalCycle(h, treeEdgeList, out cycle, out outEdge))
+                //{   //have not found correct fundemental cycle in this iteration
+                //    tmpEdgesDeleted.Push(outEdge);  //delete and remember the second outside edge found
+                //    h.DelEdge(outEdge);
+                //    continue;   //try again without that edge
+                //}
+                //else
+                //{   //have found correct fundamental cycle
+                //    cycles.Push(cycle);
+                //    h.DelEdge(outEdge);
+                //    outsideEdgesCount--;
+                //    while(tmpEdgesDeleted.Count > 0)
+                //    {   //restore previously deleted (unused) edges
+                //        h.AddEdge(tmpEdgesDeleted.Pop());
+                //    }
+                //}
+                CycleFinderData data = new CycleFinderData(g);
+                if(MyFindFundamentalCycle(0, g, treeEdgeList, data, 0))
                 {   //have found correct fundamental cycle
-                    cycles.Push(cycle);
-                    h.DelEdge(outEdge);
+                    cycles.Push(data.cycle);
+                    h.DelEdge(data.outEdge);
                     outsideEdgesCount--;
-                    while(tmpEdgesDeleted.Count > 0)
-                    {   //restore previously deleted (unused) edges
-                        h.AddEdge(tmpEdgesDeleted.Pop());
-                    }
                 }
-            }
+        }
 
             Edge[][] result = new Edge[cycles.Count][];
 
@@ -95,6 +126,118 @@ namespace ASD
             }
 
             return result;
+        }
+
+        //search for cycle by DFS
+        internal bool MyFindFundamentalCycle(int startVertex, Graph g, HashSet<Edge> treeEdgeList, CycleFinderData data, int level)
+        {
+            bool resultValue;
+
+            //function is valid only for undirected graphs
+            if (g.EdgesCount < 3)   //TODO: move outside rec function
+            {   //then no cycle can exist
+                data.outEdge = new Edge();
+                data.cycle = new Edge[0];
+                return false;
+            }
+
+            //preVertex
+            data.visited[startVertex] = 1;
+
+            foreach (var e in g.OutEdges(startVertex))
+            {
+                //visitEdge
+                if (!g.Directed && data.from[e.From] == e.To)
+                {   //undirected graps are implemented as directed graphs with edges both ways
+                    continue;
+                }
+
+                if (!treeEdgeList.Contains(e))
+                {
+                    if(data.outOfTreeEdgeCount == 0)
+                    {
+                        data.outOfTreeEdgeCount++;
+                        data.outEdge = e;
+                    }
+                    else
+                    {
+                        continue;   //choose edge contained in the spanning tree instead
+                    }
+                }
+
+                data.from[e.To] = e.From;
+                data.edges.Put(e);
+
+                if (data.visited[e.To] == 1)
+                {   //TODO: found cycle, break recursion
+                    data.hasCycle = true;
+                    data.cycleEnd = e.To;
+                    //outsideEdge = outEdge;
+                    return true;
+                }
+
+                if(resultValue = MyFindFundamentalCycle(e.To, g, treeEdgeList, data, level + 1))
+                {   //found cycle
+                    //executed only once
+                    if (data.hasCycle && level == 0)
+                    {   //reconstruct cycle
+                        int i = 0;
+                        bool stop = false;
+
+                        while (!data.edges.Empty)
+                        {
+                            Edge e2 = data.edges.Get();
+
+                            if (!stop)
+                                data.cycle[i++] = e2;
+
+                            if (!data.edges.Empty && data.edges.Peek().To == data.cycleEnd)
+                            {
+                                stop = true;
+                                continue;
+                            }
+                        }
+
+                        Array.Resize<Edge>(ref data.cycle, i);
+                        Array.Reverse(data.cycle);
+                    }
+                    return true;
+                }
+
+                //postVertex
+                data.visited[e.To] = 2; // czarny TODO: should be e.To ??
+
+                if (!data.edges.Empty)
+                    data.edges.Get();
+            }
+
+            ////executed only once
+            //if (data.hasCycle && level == 0)
+            //{   //reconstruct cycle
+            //    int i = 0;
+            //    bool stop = false;
+
+            //    while (!data.edges.Empty)
+            //    {
+            //        Edge e2 = data.edges.Get();
+
+            //        if (!stop)
+            //            data.cycle[i++] = e2;
+
+            //        if (!data.edges.Empty && data.edges.Peek().To == data.cycleEnd)
+            //        {
+            //            stop = true;
+            //            continue;
+            //        }
+            //    }
+
+            //    Array.Resize<Edge>(ref data.cycle, i);
+            //    Array.Reverse(data.cycle);
+
+            //    return true;
+            //}
+
+            return false;
         }
 
         public bool FindFundamentalCycle(Graph g, HashSet<Edge> treeEdgeList, out Edge[] cycle, out Edge outsideEdge)
@@ -206,8 +349,44 @@ namespace ASD
         /// <returns>null, jeśli wynikiem nie jest cykl i suma cykli, jeśli wynik jest cyklem</returns>
         public Edge[] AddFundamentalCycles(Edge[] c1, Edge[] c2)
         {
+            HashSet<Edge> edgesToSkip = new HashSet<Edge>();
+            HashSet<Edge> c2EdgeSet = new HashSet<Edge>();
+            EdgesQueue edgesQueue = new EdgesQueue();
+            //bool[] addEdge = new bool[c2.Length];
 
-            return null;
+            foreach (var e2 in c2)
+            {
+                c2EdgeSet.Add(e2);
+            }
+
+            foreach (var e1 in c1)
+            {
+                if(!c2EdgeSet.Contains(e1))
+                {
+                    edgesQueue.Put(e1);
+                }
+                else
+                {
+                    edgesToSkip.Add(e1);
+                }
+            }
+
+            foreach (var e2 in c2)
+            {
+                if(!edgesToSkip.Contains(e2))
+                {
+                    edgesQueue.Put(e2);
+                }
+            }
+
+            Edge[] resultCycle = new Edge[edgesQueue.Count];
+            int i = 0;
+            while(!edgesQueue.Empty)
+            {
+                resultCycle[i++] = edgesQueue.Get();
+            }
+
+            return resultCycle;
         }
 
     }
