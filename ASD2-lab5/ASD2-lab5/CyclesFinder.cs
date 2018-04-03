@@ -438,37 +438,66 @@ namespace ASD
             int cc;
             HashSet<Edge> visitedEdges = new HashSet<Edge>();
 
-            Predicate<Edge> visitEdge = delegate(Edge e)
+            Edge[] resultCycle = new Edge[g.EdgesCount];
+            int i = 0;
+            int lastVertex = -1;
+
+            Predicate<Edge> visitEdge = delegate (Edge e)
             {
-                if(!visitedEdges.Contains(e))
+                if (!visitedEdges.Contains(e))
                 {
                     //visitedEdges.Add(e);    //TODO: may be obsolete
                     visitedEdges.Add(new Edge(e.To, e.From, e.Weight));
-
-                    edgesQueue.Put(e);
+                    if (lastVertex != -1)
+                    {
+                        if (e.From != lastVertex)
+                        {   //input cycles were seperate and result is also 2 seperate cycles
+                            return false;
+                        }
+                    }
+                    resultCycle[i++] = e;
+                    lastVertex = e.To;
                 }
 
                 return true;
             };
 
-            GeneralSearchGraphExtender.GeneralSearchAll<EdgesStack>(g, null, null, visitEdge, out cc);
+            //Predicate<Edge> visitEdge = delegate(Edge e)
+            //{
+            //    if(!visitedEdges.Contains(e))
+            //    {
+            //        //visitedEdges.Add(e);    //TODO: may be obsolete
+            //        visitedEdges.Add(new Edge(e.To, e.From, e.Weight));
 
-            Edge[] resultCycle = new Edge[edgesQueue.Count];
-            int i = 0;
-            int lastVertex = -1;
-            while (!edgesQueue.Empty)
-            {
-                Edge e = edgesQueue.Get();
-                if(lastVertex != -1)
-                {
-                    if(e.From != lastVertex)
-                    {   //input cycles were seperate and result is also 2 seperate cycles
-                        return null;
-                    }
-                }
-                resultCycle[i++] = e;
-                lastVertex = e.To;
+            //        edgesQueue.Put(e);
+            //    }
+
+            //    return true;
+            //};
+
+            bool stoped = !GeneralSearchGraphExtender.GeneralSearchAll<EdgesStack>(g, null, null, visitEdge, out cc);
+
+            if(stoped)
+            {   //input cycles were seperate and result is also 2 seperate cycles
+                return null;
             }
+
+            //Edge[] resultCycle = new Edge[edgesQueue.Count];
+            //int i = 0;
+            //int lastVertex = -1;
+            //while (!edgesQueue.Empty)
+            //{
+            //    Edge e = edgesQueue.Get();
+            //    if(lastVertex != -1)
+            //    {
+            //        if(e.From != lastVertex)
+            //        {   //input cycles were seperate and result is also 2 seperate cycles
+            //            return null;
+            //        }
+            //    }
+            //    resultCycle[i++] = e;
+            //    lastVertex = e.To;
+            //}
 
             return resultCycle;
             //HashSet<Edge> edgesToSkip = new HashSet<Edge>();
