@@ -376,16 +376,26 @@ namespace ASD
             HashSet<Edge> c2EdgeSet = new HashSet<Edge>();
             EdgesQueue edgesQueue = new EdgesQueue();
             //bool[] addEdge = new bool[c2.Length];
+            int maxVertices = 0;
 
             foreach (var e2 in c2)
             {
                 c2EdgeSet.Add(e2);
+                //remember max vertex number
+                if(e2.From > e2.To && maxVertices < e2.From)
+                {
+                    maxVertices = e2.From;
+                }
+                else if(maxVertices < e2.To)
+                {
+                    maxVertices = e2.To;
+                }
             }
 
             foreach (var e1 in c1)
             {
                 Edge e1Reversed = new Edge(e1.To, e1.From, e1.Weight);
-                if(!c2EdgeSet.Contains(e1) && !c2EdgeSet.Contains(e1Reversed))
+                if (!c2EdgeSet.Contains(e1) && !c2EdgeSet.Contains(e1Reversed))
                 {
                     edgesQueue.Put(e1);
                 }
@@ -394,24 +404,113 @@ namespace ASD
                     edgesToSkip.Add(e1);
                     edgesToSkip.Add(e1Reversed);
                 }
+                //remember max vertex number
+                if (e1.From > e1.To && maxVertices < e1.From)
+                {
+                    maxVertices = e1.From;
+                }
+                else if (maxVertices < e1.To)
+                {
+                    maxVertices = e1.To;
+                }
             }
 
             foreach (var e2 in c2)
             {
-                if(!edgesToSkip.Contains(e2))
+                if (!edgesToSkip.Contains(e2))
                 {
                     edgesQueue.Put(e2);
                 }
             }
 
-            Edge[] resultCycle = new Edge[edgesQueue.Count];
-            int i = 0;
+            Graph g = new AdjacencyListsGraph<SimpleAdjacencyList>(false, maxVertices + 1);     //undirected
+
             while(!edgesQueue.Empty)
             {
-                resultCycle[i++] = edgesQueue.Get();
+                Edge e = edgesQueue.Get();
+                g.AddEdge(e);
+                if(g.OutDegree(e.From) > 2 || g.OutDegree(e.To) > 2)
+                {   //result of addition is not a cycle
+                    return null;
+                }
+            }
+
+            int cc;
+            HashSet<Edge> visitedEdges = new HashSet<Edge>();
+
+            Predicate<Edge> visitEdge = delegate(Edge e)
+            {
+                if(!visitedEdges.Contains(e))
+                {
+                    //visitedEdges.Add(e);    //TODO: may be obsolete
+                    visitedEdges.Add(new Edge(e.To, e.From, e.Weight));
+
+                    edgesQueue.Put(e);
+                }
+
+                return true;
+            };
+
+            GeneralSearchGraphExtender.GeneralSearchAll<EdgesStack>(g, null, null, visitEdge, out cc);
+
+            Edge[] resultCycle = new Edge[edgesQueue.Count];
+            int i = 0;
+            int lastVertex = -1;
+            while (!edgesQueue.Empty)
+            {
+                Edge e = edgesQueue.Get();
+                if(lastVertex != -1)
+                {
+                    if(e.From != lastVertex)
+                    {   //input cycles were seperate and result is also 2 seperate cycles
+                        return null;
+                    }
+                }
+                resultCycle[i++] = e;
+                lastVertex = e.To;
             }
 
             return resultCycle;
+            //HashSet<Edge> edgesToSkip = new HashSet<Edge>();
+            //HashSet<Edge> c2EdgeSet = new HashSet<Edge>();
+            //EdgesQueue edgesQueue = new EdgesQueue();
+            ////bool[] addEdge = new bool[c2.Length];
+
+            //foreach (var e2 in c2)
+            //{
+            //    c2EdgeSet.Add(e2);
+            //}
+
+            //foreach (var e1 in c1)
+            //{
+            //    Edge e1Reversed = new Edge(e1.To, e1.From, e1.Weight);
+            //    if(!c2EdgeSet.Contains(e1) && !c2EdgeSet.Contains(e1Reversed))
+            //    {
+            //        edgesQueue.Put(e1);
+            //    }
+            //    else
+            //    {
+            //        edgesToSkip.Add(e1);
+            //        edgesToSkip.Add(e1Reversed);
+            //    }
+            //}
+
+            //foreach (var e2 in c2)
+            //{
+            //    if(!edgesToSkip.Contains(e2))
+            //    {
+            //        edgesQueue.Put(e2);
+            //    }
+            //}
+
+            //Edge[] resultCycle = new Edge[edgesQueue.Count];
+            //int i = 0;
+            //while(!edgesQueue.Empty)
+            //{
+            //    resultCycle[i++] = edgesQueue.Get();
+            //}
+
+            //return resultCycle;
         }
 
     }
