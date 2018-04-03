@@ -85,8 +85,8 @@ namespace ASD
 
             Graph h = g.Clone();
             Stack<Edge[]> cycles = new Stack<Edge[]>();
-            Edge[] cycle;
-            Edge outEdge;
+            //Edge[] cycle;
+            //Edge outEdge;
             int outsideEdgesCount = g.EdgesCount - t.EdgesCount;
             //Stack<Edge> tmpEdgesDeleted = new Stack<Edge>();
 
@@ -109,7 +109,7 @@ namespace ASD
                 //    }
                 //}
                 CycleFinderData data = new CycleFinderData(g);
-                if(MyFindFundamentalCycle(0, g, treeEdgeList, data, 0))
+                if(MyFindFundamentalCycle(0, h, treeEdgeList, data, 0))
                 {   //have found correct fundamental cycle
                     cycles.Push(data.cycle);
                     h.DelEdge(data.outEdge);
