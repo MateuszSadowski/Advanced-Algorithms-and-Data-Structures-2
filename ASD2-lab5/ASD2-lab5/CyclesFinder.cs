@@ -73,7 +73,30 @@ namespace ASD
             {
                 throw new ArgumentException();
             }
+            else
+            {
+                //check if edges of t are contained in edges of g
+                HashSet<Edge> gEdges = new HashSet<Edge>();
+                for (int v = 0; v < g.VerticesCount; v++)
+                {
+                    foreach (var e in g.OutEdges(v))
+                    {
+                        gEdges.Add(e);
+                    }
+                }
+                for (int v = 0; v < g.VerticesCount; v++)
+                {
+                    foreach (var e in t.OutEdges(v))
+                    {
+                        if(!gEdges.Contains(e))
+                        {
+                            throw new ArgumentException();
+                        }
+                    }
+                }
+            }
 
+            //t is correct spanning tree of g
             HashSet<Edge> treeEdgeList = new HashSet<Edge>();
             for (int v = 0; v < t.VerticesCount; v++)
             {
@@ -361,13 +384,15 @@ namespace ASD
 
             foreach (var e1 in c1)
             {
-                if(!c2EdgeSet.Contains(e1))
+                Edge e1Reversed = new Edge(e1.To, e1.From, e1.Weight);
+                if(!c2EdgeSet.Contains(e1) && !c2EdgeSet.Contains(e1Reversed))
                 {
                     edgesQueue.Put(e1);
                 }
                 else
                 {
                     edgesToSkip.Add(e1);
+                    edgesToSkip.Add(e1Reversed);
                 }
             }
 
