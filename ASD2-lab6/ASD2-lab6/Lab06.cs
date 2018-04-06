@@ -380,7 +380,7 @@ namespace ASD
     {
         static void Main(string[] args)
         {
-            bool checkPath = false;
+            bool checkPath = true;
 
             Lab06TestModule lab06test = new Lab06TestModule(checkPath);
             lab06test.PrepareTestSets();

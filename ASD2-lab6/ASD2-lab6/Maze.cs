@@ -25,7 +25,7 @@ namespace ASD
             int end = -1;
             int height = maze.GetLength(0);
             int width = maze.GetLength(1);
-            Graph graph = new AdjacencyListsGraph<SimpleAdjacencyList>(false, maze.GetLength(0) * maze.GetLength(1));
+            Graph graph = new AdjacencyListsGraph<SimpleAdjacencyList>(true, maze.GetLength(0) * maze.GetLength(1));
 
             for (int i = 0; i < height; i++)
             {
@@ -50,7 +50,6 @@ namespace ASD
                     }
 
                     //we have dynamite or we are on 'O'
-
                         //check to bottom
                         if (i + 1 < height && maze[i + 1, j] != 'X')
                         {
@@ -89,125 +88,160 @@ namespace ASD
 
             if (pathsInfo[end].Dist.IsNaN())
             {
-                path = null;
+                path = "";
                 return -1;
             }
+
+            Edge[] pathToEnd = PathsInfo.ConstructPath(start, end, pathsInfo);
+            string pathAsChars = "";
+
+            foreach (var edge in pathToEnd)
+            {
+                char? c = getDirection(edge, width);
+                if(c == null)
+                {
+                    Console.WriteLine("Error getting path.");
+                    break;
+                }
+                pathAsChars += c;
+            }
+
             minDistance = (int)pathsInfo[end].Dist;
-
-
-
-        ////if (false == withDynamite)
-        ////{
-        //    PathsInfo[] pathsInfo = new PathsInfo[1];
-        //    int start = -1;
-        //    int end = -1;
-        //    int height = maze.GetLength(0);
-        //    int width = maze.GetLength(1);
-        //    //0123
-        //    //4567  - indexes of vertices, is it right ??
-        //    //Graph graph = new AdjacencyMatrixGraph(false, maze.GetLength(0) * maze.GetLength(1));   //undirected - we want to be able to go both ways
-        //    Graph graph = new AdjacencyListsGraph<SimpleAdjacencyList>(false, maze.GetLength(0) * maze.GetLength(1));
-
-        //    //build graph
-        //    for (int i = 0; i < height; i++)
-        //    {
-        //        for (int j = 0; j < width; j++)
-        //        {
-        //            if(maze[i, j] == 'X')
-        //            {
-        //                if(!withDynamite)
-        //                {
-        //                    continue;
-        //                }
-        //                else
-        //                {
-        //                                                //check to bottom
-        //                if(i + 1 < height && maze[i + 1, j] != 'X')
-        //                {
-        //                    int from = i * width + j;
-        //                    int to = (i+1) * width + j;
-        //                    graph.AddEdge(from, to, 1);
-        //                }
-        //                else if (withDynamite && i + 1 < height && maze[i + 1, j] == 'X')
-        //                {
-        //                    int from = i * width + j;
-        //                    int to = (i + 1) * width + j;
-        //                    graph.AddEdge(from, to, t);
-        //                }
-
-        //                //check to right
-        //                if (j + 1 < width && maze[i, j + 1] == 'X')
-        //                {
-        //                    int from = i * width + j;
-        //                    int to = i * width + j + 1;
-        //                    graph.AddEdge(from, to, 1);
-        //                }
-        //                else if (withDynamite && j + 1 < width && maze[i, j + 1] == 'X')
-        //                {
-        //                    int from = i * width + j;
-        //                    int to = i * width + j + 1;
-        //                    graph.AddEdge(from, to, t);
-        //                }
-        //                }
-
-        //            }
-        //            else
-        //            {
-        //                if(maze[i, j] == 'S')
-        //                {
-        //                    start = i * width + j;
-        //                }
-        //                else if(maze[i, j] == 'E')
-        //                {
-        //                    end = i * width + j;
-        //                }
-
-        //                //check to bottom
-        //                if(i + 1 < height && maze[i + 1, j] != 'X')
-        //                {
-        //                    int from = i * width + j;
-        //                    int to = (i+1) * width + j;
-        //                    graph.AddEdge(from, to, 1);
-        //                }
-        //                else if (withDynamite && i + 1 < height && maze[i + 1, j] == 'X')
-        //                {
-        //                    int from = i * width + j;
-        //                    int to = (i + 1) * width + j;
-        //                    graph.AddEdge(from, to, t);
-        //                }
-
-        //                //check to right
-        //                if (j + 1 < width && maze[i, j + 1] != 'X')
-        //                {
-        //                    int from = i * width + j;
-        //                    int to = i * width + j + 1;
-        //                    graph.AddEdge(from, to, 1);
-        //                }
-        //                else if (withDynamite && j + 1 < width && maze[i, j + 1] == 'X')
-        //                {
-        //                    int from = i * width + j;
-        //                    int to = i * width + j + 1;
-        //                    graph.AddEdge(from, to, t);
-        //                }
-        //            }
-        //        }
-        //    }
-
-        //    //search for path
-        //    graph.DijkstraShortestPaths(start, out pathsInfo);
-
-        //    //GraphExport ge = new GraphExport();
-        //    //ge.Export(graph);
-
-        //    if (pathsInfo[end].Dist.IsNaN())
-        //    {
-        //        path = null;
-        //        return -1;
-        //    }
-        //    minDistance = (int)pathsInfo[end].Dist;
-
-            path = null; // tej linii na laboratorium nie zmieniamy!
+            path = pathAsChars; // tej linii na laboratorium nie zmieniamy!
             return minDistance;
+
+            ////if (false == withDynamite)
+            ////{
+            //    PathsInfo[] pathsInfo = new PathsInfo[1];
+            //    int start = -1;
+            //    int end = -1;
+            //    int height = maze.GetLength(0);
+            //    int width = maze.GetLength(1);
+            //    //0123
+            //    //4567  - indexes of vertices, is it right ??
+            //    //Graph graph = new AdjacencyMatrixGraph(false, maze.GetLength(0) * maze.GetLength(1));   //undirected - we want to be able to go both ways
+            //    Graph graph = new AdjacencyListsGraph<SimpleAdjacencyList>(false, maze.GetLength(0) * maze.GetLength(1));
+
+            //    //build graph
+            //    for (int i = 0; i < height; i++)
+            //    {
+            //        for (int j = 0; j < width; j++)
+            //        {
+            //            if(maze[i, j] == 'X')
+            //            {
+            //                if(!withDynamite)
+            //                {
+            //                    continue;
+            //                }
+            //                else
+            //                {
+            //                                                //check to bottom
+            //                if(i + 1 < height && maze[i + 1, j] != 'X')
+            //                {
+            //                    int from = i * width + j;
+            //                    int to = (i+1) * width + j;
+            //                    graph.AddEdge(from, to, 1);
+            //                }
+            //                else if (withDynamite && i + 1 < height && maze[i + 1, j] == 'X')
+            //                {
+            //                    int from = i * width + j;
+            //                    int to = (i + 1) * width + j;
+            //                    graph.AddEdge(from, to, t);
+            //                }
+
+            //                //check to right
+            //                if (j + 1 < width && maze[i, j + 1] == 'X')
+            //                {
+            //                    int from = i * width + j;
+            //                    int to = i * width + j + 1;
+            //                    graph.AddEdge(from, to, 1);
+            //                }
+            //                else if (withDynamite && j + 1 < width && maze[i, j + 1] == 'X')
+            //                {
+            //                    int from = i * width + j;
+            //                    int to = i * width + j + 1;
+            //                    graph.AddEdge(from, to, t);
+            //                }
+            //                }
+
+            //            }
+            //            else
+            //            {
+            //                if(maze[i, j] == 'S')
+            //                {
+            //                    start = i * width + j;
+            //                }
+            //                else if(maze[i, j] == 'E')
+            //                {
+            //                    end = i * width + j;
+            //                }
+
+            //                //check to bottom
+            //                if(i + 1 < height && maze[i + 1, j] != 'X')
+            //                {
+            //                    int from = i * width + j;
+            //                    int to = (i+1) * width + j;
+            //                    graph.AddEdge(from, to, 1);
+            //                }
+            //                else if (withDynamite && i + 1 < height && maze[i + 1, j] == 'X')
+            //                {
+            //                    int from = i * width + j;
+            //                    int to = (i + 1) * width + j;
+            //                    graph.AddEdge(from, to, t);
+            //                }
+
+            //                //check to right
+            //                if (j + 1 < width && maze[i, j + 1] != 'X')
+            //                {
+            //                    int from = i * width + j;
+            //                    int to = i * width + j + 1;
+            //                    graph.AddEdge(from, to, 1);
+            //                }
+            //                else if (withDynamite && j + 1 < width && maze[i, j + 1] == 'X')
+            //                {
+            //                    int from = i * width + j;
+            //                    int to = i * width + j + 1;
+            //                    graph.AddEdge(from, to, t);
+            //                }
+            //            }
+            //        }
+            //    }
+
+            //    //search for path
+            //    graph.DijkstraShortestPaths(start, out pathsInfo);
+
+            //    //GraphExport ge = new GraphExport();
+            //    //ge.Export(graph);
+
+            //    if (pathsInfo[end].Dist.IsNaN())
+            //    {
+            //        path = null;
+            //        return -1;
+            //    }
+            //    minDistance = (int)pathsInfo[end].Dist;
+        }
+
+        internal char? getDirection(Edge edge, int width)
+        {
+            int directonIndicator = edge.To - edge.From;
+            if(directonIndicator == 1)
+            {
+                return 'E';
+            }
+            else if(directonIndicator == -1)
+            {
+                return 'W';
+            }
+            else if (directonIndicator == width)
+            {
+                return 'S';
+            }
+            else if (directonIndicator == -width)
+            {
+                return 'N';
+            }
+
+            return null;
         }
 
         /// <summary>
