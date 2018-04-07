@@ -317,6 +317,8 @@ namespace ASD
                       + "XOXXOXXXOXXOOOOOXXOX\n"
                       + "XOSOOXXXOOOOXXXOOOOX";
 
+            string m9 = "EXS";
+
             //losowy duży test
             Random rand = new Random(777);
             StringBuilder m8SB = new StringBuilder();
@@ -338,33 +340,33 @@ namespace ASD
 
             string m8 = m8SB.ToString();
 
-            string[] mazes = new string[] { m1, m2, m3, m4, m5, m6, m7, m8 };
+            string[] mazes = new string[] { m1, m2, m3, m4, m5, m6, m7, m8, m9 };
 
             //--- Wersja I ---
             TestSets["v1Tests"] = new TestSet(new Maze(), "Wersja I", null, false);
-            int[] v1ExpectedValues = new int[] { 16, -1, 1, 7, 152, 130, 34, -1 };
+            int[] v1ExpectedValues = new int[] { 16, -1, 1, 7, 152, 130, 34, -1, -1 };
             for (int i = 0; i < mazes.Length; i++)
                 TestSets["v1Tests"].TestCases.Add(new FindShortestPathTestCase(20, null, "", mazeStringToCharArray(mazes[i]), false, 0, v1ExpectedValues[i], checkPath));
 
             //--- Wersja II ---
             TestSets["v2Tests"] = new TestSet(new Maze(), "Wersja II", null, false);
-            int[] v2ExpectedValues = new int[] { 10, 13, 1, 7, 29, 22, 23, 488 };
-            int[] v2tValues = new int[] { 3, 4, 5, 3, 4, 5, 2, 10, 3 };
+            int[] v2ExpectedValues = new int[] { 10, 13, 1, 7, 29, 22, 23, 488, 3 };
+            int[] v2tValues = new int[] { 3, 4, 5, 3, 4, 5, 2, 10, 2 };
             for (int i = 0; i < mazes.Length; i++)
                 TestSets["v2Tests"].TestCases.Add(new FindShortestPathTestCase(20, null, "", mazeStringToCharArray(mazes[i]), true, v2tValues[i], v2ExpectedValues[i], checkPath));
 
             //--- Wersja III ---
             TestSets["v3Tests"] = new TestSet(new Maze(), "Wersja III", null, false);
-            int[] v3ExpectedValues = new int[] { 10, 12, 1, 7, 96, 94, 27, -1 };
-            int[] v3tValues = new int[] { 3, 3, 4, 4, 5, 5, 6, 6, 8 };
+            int[] v3ExpectedValues = new int[] { 10, 12, 1, 7, 96, 94, 27, -1, 3 };
+            int[] v3tValues = new int[] { 3, 3, 4, 4, 5, 5, 6, 6, 2 };
             for (int i = 0; i < mazes.Length; i++)
                 TestSets["v3Tests"].TestCases.Add(new FindShortestPathWithKDynamites(20, null, "", mazeStringToCharArray(mazes[i]), 1, v3tValues[i], v3ExpectedValues[i], checkPath));
 
             //--- Wersja IV ---
             TestSets["v4Tests"] = new TestSet(new Maze(), "Wersja IV", null, false);
-            int[] v4ExpectedValues = new int[] { 12, -1, 1, 7, 56, 52, 34, 440 };
-            int[] v4tValues = new int[] { 5, 5, 3, 3, 5, 2, 3, 4 };
-            int[] dynamites = new int[] { 2, 0, 2, 5, 2, 2, 0, 8 };
+            int[] v4ExpectedValues = new int[] { 12, -1, 1, 7, 56, 52, 34, 440, 3 };
+            int[] v4tValues = new int[] { 5, 5, 3, 3, 5, 2, 3, 4, 2 };
+            int[] dynamites = new int[] { 2, 0, 2, 5, 2, 2, 0, 8, 1 };
             for (int i = 0; i < mazes.Length; i++)
                 TestSets["v4Tests"].TestCases.Add(new FindShortestPathWithKDynamites(20, null, "", mazeStringToCharArray(mazes[i]), dynamites[i], v4tValues[i], v4ExpectedValues[i], checkPath));
         }
