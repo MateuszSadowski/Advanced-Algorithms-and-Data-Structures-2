@@ -505,7 +505,6 @@ namespace ASD
         internal void connectXwithO(int from, int to)
         {
             graph.AddEdge(from, to, 1);
-            //graph.AddEdge(to, from, throughDynamiteCost);
         }
 
         internal void connectOwithO(int from, int to)
