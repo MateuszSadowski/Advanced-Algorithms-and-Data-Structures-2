@@ -17,342 +17,71 @@ namespace ASD
         /// </summary>
         /// 
 
-        public int worker1Sum;
-        public int worker2Sum;
+        public int workerSum;
         public int expectedSum;
-        public bool worker1Satisfied;
-        public bool worker2Satisfied;
         public int[] blockWeights;
         public int blockCount;
-        public int blockCountTotal;
+
         public int[] DivideWorkersWork(int[] blocks, int expectedBlockSum)
         {
-            worker1Sum = 0;
-            worker2Sum = 0;
+            workerSum = 0;
             expectedSum = expectedBlockSum;
-            worker1Satisfied = false;
-            worker2Satisfied = false;
             blockWeights = blocks;
             blockCount = blocks.Length;
-            blockCountTotal = blocks.Length;
-
-            if(expectedBlockSum == 0)
-            {
-                return new int[blocks.Length];
-            }
 
             int[] tmpBlocks = new int[blocks.Length];
-            bool satisfiedAll = DivideWorkersWorkUtil(tmpBlocks, 0);
 
-            if (satisfiedAll)
-            {
-                return tmpBlocks;
+            bool result = DivideWorkersWorkUtil(1, tmpBlocks, 0);
+            if(!result)
+            {   //if could not be found for 1 worker then fail
+                return null;
             }
 
-            //DivideWorkersWorkUtil(tmpBlocks, 0);
+            workerSum = 0;
+            result = DivideWorkersWorkUtil(2, tmpBlocks, 0);
+            if (!result)
+            {   
+                return null;
+            }
 
-            //if(worker1Satisfied && worker2Satisfied)
-            //{
-            //    return tmpBlocks;
-            //}
-
-            return null;
+            return tmpBlocks;
         }
 
-        //public bool DivideWorkersWorkUtil(int[] tmpBlocks, int level)   //level - number of blocks assigned in total
-        //{
-        //    if (worker1Satisfied && worker2Satisfied)
-        //    {
-        //        return true;
-        //    }
-
-
-        //}
-
-        //public bool DivideWorker1Util(int[] tmpBlocks, int level)
-        //{
-        //    if(worker1Sum == expectedSum)
-        //    {
-        //        return true;
-        //    }
-
-        //    if (level >= blockCount)
-        //    {   //no more block to assign
-        //        return false;
-        //    }
-
-        //    for (int i = 0; i < blockCountTotal; i++)
-        //    {
-        //        worker1Sum += blockWeights[i];
-        //        tmpBlocks[i] = 1;
-
-        //        DivideWorker1Util()
-        //    }
-        //}
-
-        //public void DivideWorkersWorkUtil(int[] tmpBlocks, int level)   //level -> block
-        //{
-        //    if (worker1Satisfied && worker2Satisfied)
-        //    {
-        //        return;
-        //    }
-        //    else if (level >= blockCount)
-        //    {
-        //        return;
-        //    }
-
-        //    bool satisfiedAll = false;
-
-        //    //decision - assign block to 1 or 2
-        //    if (!worker1Satisfied)
-        //    {   //assign to 1
-        //        for (int i = level; i < blockCount; i++)
-        //        {
-        //            worker1Sum += blockWeights[i];
-        //            tmpBlocks[i] = 1;
-
-        //            if(worker1Sum == expectedSum)
-        //            {
-        //                worker1Satisfied = true;
-        //                break;
-        //            }
-        //            else if(worker1Sum > expectedSum)
-        //            {
-        //                worker1Sum -= blockWeights[i];
-        //                tmpBlocks[i] = 0;
-        //                continue;
-        //            }
-
-        //            DivideWorkersWorkUtil(tmpBlocks, level + 1);
-
-        //            if(worker1Satisfied)
-        //            {
-        //                break;
-        //            }
-
-        //            worker1Sum -= blockWeights[i];
-        //            tmpBlocks[i] = 0;
-        //        }
-        //    }
-
-        //    if (!worker2Satisfied)
-        //    {   //assign to 2
-        //        for (int i = level; i < blockCount; i++)
-        //        {
-        //            worker2Sum += blockWeights[i];
-        //            tmpBlocks[i] = 1;
-
-        //            if (worker2Sum == expectedSum)
-        //            {
-        //                worker2Satisfied = true;
-        //                break;
-        //            }
-        //            else if (worker2Sum > expectedSum)
-        //            {
-        //                worker2Sum -= blockWeights[i];
-        //                tmpBlocks[i] = 0;
-        //                continue;
-        //            }
-
-        //            DivideWorkersWorkUtil(tmpBlocks, level + 1);
-
-        //            if (worker2Satisfied)
-        //            {
-        //                break;
-        //            }
-
-        //            worker2Sum -= blockWeights[i];
-        //            tmpBlocks[i] = 0;
-        //        }
-        //    }
-
-        //    return;
-        //}
-
-        //kinda working
-        public bool DivideWorkersWorkUtil(int[] tmpBlocks, int level)   //level -> block
+        public bool DivideWorkersWorkUtil(int workerNum, int[] blocks, int nextBlock)
         {
-            if (worker1Satisfied && worker2Satisfied)
+            if(workerSum == expectedSum)
             {
                 return true;
             }
-            else if (level >= blockCount)
+
+            for (int block = nextBlock; block < blockCount; block++)
             {
-                return false;
+                if(blocks[block] != 0)
+                {   //block already assigned to current worker or another worker
+                    continue;
+                }
+
+                workerSum += blockWeights[block];
+                blocks[block] = workerNum;
+
+                if(workerSum <= expectedSum)
+                {
+                    bool success = DivideWorkersWorkUtil(workerNum, blocks, block + 1);
+                    if(success)
+                    {
+                        return true;
+                    }
+                }
+
+                //have not found solution with current block
+                workerSum -= blockWeights[block];
+                blocks[block] = 0;
+                //try next block
             }
 
-            bool satisfiedAll = false;
-
-            //decision - assign block to 1 or 2
-            if (!worker1Satisfied)
-            {   //assign to 1
-                for (int i = level; i < blockCount; i++)
-                {
-                    worker1Sum += blockWeights[i];
-                    tmpBlocks[i] = 1;
-                    if (worker1Sum > expectedSum)
-                    {
-                        worker1Sum -= blockWeights[i];
-                        worker1Satisfied = false;
-                        tmpBlocks[i] = 0;
-                        if (i + 1 == blockCount)
-                        {
-                            return false;
-                        }
-                        continue;
-                    }
-                    else if (worker1Sum == expectedSum)
-                    {
-                        worker1Satisfied = true;
-                        //continue trying for worker 2
-                    }
-
-                    satisfiedAll = DivideWorkersWorkUtil(tmpBlocks, level + 1);
-
-                    if (!satisfiedAll)
-                    {
-                        worker1Sum -= blockWeights[i];
-                        worker1Satisfied = false;
-                        tmpBlocks[i] = 0;
-                    }
-                    else
-                    {
-                        break;
-                    }
-                }
-            }
-
-            if (!worker2Satisfied)
-            {   //assign to 2
-                for (int i = level; i < blockCount; i++)
-                {
-                    worker2Sum += blockWeights[i];
-                    tmpBlocks[i] = 2;
-                    if (worker2Sum > expectedSum)
-                    {
-                        worker2Sum -= blockWeights[i];
-                        worker2Satisfied = false;
-                        tmpBlocks[i] = 0;
-                        continue;
-                    }
-                    else if (worker2Sum == expectedSum)
-                    {
-                        worker2Satisfied = true;
-                        //continue trying for worker 1
-                    }
-
-                    satisfiedAll = DivideWorkersWorkUtil(tmpBlocks, level + 1);
-
-                    if (!satisfiedAll)
-                    {
-                        worker2Sum -= blockWeights[i];
-                        worker2Satisfied = false;
-                        tmpBlocks[i] = 0;
-                    }
-                    else
-                    {
-                        break;
-                    }
-                }
-
-                if (satisfiedAll)
-                {
-                    return true;
-                }
-                else
-                {
-                    return false;
-                }
-            }
-
-            return satisfiedAll;
+            //have not found solution with previous block choice, go back and choose different
+            return false;
         }
-
-        //public bool DivideWorkersWorkUtil(int[] tmpBlocks, int level)   //level -> block
-        //{
-        //    if (worker1Satisfied && worker2Satisfied)
-        //    {
-        //        return true;
-        //    }
-        //    else if (level >= blockCount)
-        //    {
-        //        return false;
-        //    }
-
-        //    bool satisfiedAll = false;
-
-        //    //decision - assign block to 1 or 2
-        //    if (!worker1Satisfied)
-        //    {   //assign to 1
-        //        for (int i = level; i < blockCount; i++)
-        //        {
-        //            worker1Sum += blockWeights[i];
-        //            tmpBlocks[i] = 1;
-        //            if (worker1Sum > expectedSum)
-        //            {
-        //                worker1Sum -= blockWeights[i];
-        //                worker1Satisfied = false;
-        //                tmpBlocks[i] = 0;
-        //                return false;
-        //            }
-        //            else if (worker1Sum == expectedSum)
-        //            {
-        //                worker1Satisfied = true;
-        //                //continue trying for worker 2
-        //            }
-
-        //            satisfiedAll = DivideWorkersWorkUtil(tmpBlocks, level + 1);
-
-        //            if (!satisfiedAll)
-        //            {
-        //                worker1Sum -= blockWeights[i];
-        //                worker1Satisfied = false;
-        //                tmpBlocks[i] = 0;
-        //            }
-        //        }
-        //    }
-
-        //    if (!worker2Satisfied)
-        //    {   //assign to 2
-        //        for (int i = level; i < blockCount; i++)
-        //        {
-        //            worker2Sum += blockWeights[i];
-        //            tmpBlocks[i] = 2;
-        //            if (worker2Sum > expectedSum)
-        //            {
-        //                worker2Sum -= blockWeights[i];
-        //                worker2Satisfied = false;
-        //                tmpBlocks[i] = 0;
-        //                continue;
-        //            }
-        //            else if (worker2Sum == expectedSum)
-        //            {
-        //                worker2Satisfied = true;
-        //                //continue trying for worker 1
-        //            }
-
-        //            satisfiedAll = DivideWorkersWorkUtil(tmpBlocks, level + 1);
-
-        //            if (!satisfiedAll)
-        //            {
-        //                worker2Sum -= blockWeights[i];
-        //                worker2Satisfied = false;
-        //                tmpBlocks[i] = 0;
-        //            }
-        //        }
-
-        //        //if (satisfiedAll)
-        //        //{
-        //        //    return true;
-        //        //}
-        //        //else
-        //        //{
-        //        //    return false;
-        //        //}
-        //    }
-
-        //    return satisfiedAll;
-        //}
 
         /// <summary>
         /// Implementacja wersji 2
