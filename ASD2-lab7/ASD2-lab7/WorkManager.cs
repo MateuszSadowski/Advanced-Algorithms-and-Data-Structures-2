@@ -56,7 +56,7 @@ namespace ASD
 
             for (int blockIndex = nextBlockToTry; blockIndex < blockCount; blockIndex++)
             {
-                if (blocks[blockIndex] != 0)   //blockWeights[block] < 0 -> block is removed, for second task
+                if (blocks[blockIndex] != 0)
                 {   //block already assigned to current worker or another worker
                     continue;
                 }
@@ -94,7 +94,7 @@ namespace ASD
 
             for (int blockIndex = nextBlockToTry; blockIndex < blockCount; blockIndex++)
             {
-                if (blocks[blockIndex] != 0)   //blockWeights[block] < 0 -> block is removed, for second task
+                if (blocks[blockIndex] != 0)
                 {   //block already assigned to current worker or another worker
                     continue;
                 }
@@ -129,7 +129,7 @@ namespace ASD
         internal int worker1BlockCount;
         internal int worker2BlockCount;
 
-        internal int minBlockWeight, maxBlockWeight;
+        internal int minBlockWeight;
         internal int sumBlockWeights;
 
         public int[] DivideWorkWithClosestBlocksCount(int[] blocks, int expectedBlockSum)
@@ -142,20 +142,14 @@ namespace ASD
 
             int[] blocksAssignment = new int[blockCount];
 
-            //optimalization
+            //for optimization
             minBlockWeight = Int32.MaxValue;
-            maxBlockWeight = Int32.MinValue;
             sumBlockWeights = 0;
             foreach (var weight in blockWeights)
             {
                 if (minBlockWeight > weight)
                 {
                     minBlockWeight = weight;
-                }
-
-                if (maxBlockWeight < weight)
-                {
-                    maxBlockWeight = weight;
                 }
 
                 sumBlockWeights += weight;
@@ -190,7 +184,7 @@ namespace ASD
 
             for (int blockIndex = nextBlockToTry; blockIndex < blockCount; blockIndex++)
             {
-                if (blocks[blockIndex] != 0)   //blockWeights[block] < 0 -> block is removed, for second task
+                if (blocks[blockIndex] != 0)
                 {   //block already assigned to current worker or another worker
                     continue;
                 }
@@ -207,16 +201,14 @@ namespace ASD
                         if (success)
                         {
                             if(minBlockCountDiff == 0)
-                            {
+                            {   //best possible solution, finish
                                 return true;
                             }
-                            //return true;
-                            //look for next solution
                         }
                     }
                 }
 
-                //have not found solution with current block
+                //look for different solution
                 worker1Sum -= blockWeights[blockIndex];
                 worker1BlockCount -= 1;
                 blocks[blockIndex] = 0;
@@ -241,7 +233,7 @@ namespace ASD
 
             for (int blockIndex = nextBlockToTry; blockIndex < blockCount; blockIndex++)
             {
-                if (blocks[blockIndex] != 0)   //blockWeights[block] < 0 -> block is removed, for second task
+                if (blocks[blockIndex] != 0)
                 {   //block already assigned to current worker or another worker
                     continue;
                 }
@@ -253,16 +245,15 @@ namespace ASD
                 {
                     bool success = DivideWorkWorker2BestSolutionUtil(blocks, blockIndex + 1);
                     if (success)
-                    {   //look for next solution
-                        //return true;
+                    { 
                         if(minBlockCountDiff == 0)
-                        {
+                        {   //best possible solution
                             return true;
                         }
                     }
                 }
 
-                //have not found solution with current block
+                //look for different solution
                 worker2Sum -= blockWeights[blockIndex];
                 worker2BlockCount -= 1;
                 blocks[blockIndex] = 0;
