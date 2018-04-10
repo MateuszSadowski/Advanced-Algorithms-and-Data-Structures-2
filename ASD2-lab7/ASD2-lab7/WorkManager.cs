@@ -124,12 +124,119 @@ namespace ASD
         /// Parametry i wynik s¹ analogiczne do wersji 1.
         /// </summary>
         /// 
+
+        public int[] bestSolution;
+        public int minBlockCountDiff;
+        public int worker1BlockCount;
+        public int worker2BlockCount;
+
         public int[] DivideWorkWithClosestBlocksCount(int[] blocks, int expectedBlockSum)
         {
+            worker1Sum = 0;
+            worker2Sum = 0;
+            expectedSum = expectedBlockSum;
+            blockWeights = blocks;
+            blockCount = blocks.Length;
 
-            return null;
+            int[] blocksAssignment = new int[blockCount];
+
+            if (expectedSum == 0)
+            {
+                return blocksAssignment;
+            }
+
+            bestSolution = null;
+            minBlockCountDiff = Int32.MaxValue;
+            worker1BlockCount = 0;
+            worker2BlockCount = 0;
+
+            DivideWorkWorker1BestSolutionUtil(blocksAssignment, 0);
+
+            return bestSolution;
         }
 
+        internal bool DivideWorkWorker1BestSolutionUtil(int[] blocks, int nextBlockToTry)
+        {
+            if (worker1Sum == expectedSum)
+            {
+                return true;
+            }
+
+            for (int blockIndex = nextBlockToTry; blockIndex < blockCount; blockIndex++)
+            {
+                if (blocks[blockIndex] != 0)   //blockWeights[block] < 0 -> block is removed, for second task
+                {   //block already assigned to current worker or another worker
+                    continue;
+                }
+
+                worker1Sum += blockWeights[blockIndex];
+                worker1BlockCount += 1;
+                blocks[blockIndex] = 1;
+                if (worker1Sum <= expectedSum)
+                {
+                    bool success = DivideWorkWorker1BestSolutionUtil(blocks, blockIndex + 1);
+                    if (success)
+                    {   //try to find for worker 2
+                        success = DivideWorkWorker2BestSolutionUtil(blocks, 0);
+                        if (success)
+                        {
+                            //return true;
+                            //look for next solution
+                        }
+                    }
+                }
+
+                //have not found solution with current block
+                worker1Sum -= blockWeights[blockIndex];
+                worker1BlockCount -= 1;
+                blocks[blockIndex] = 0;
+                //try next block
+            }
+
+            return false;
+        }
+
+        internal bool DivideWorkWorker2BestSolutionUtil(int[] blocks, int nextBlockToTry)
+        {
+            if (worker2Sum == expectedSum)
+            {
+                int blockCountDiff = Math.Abs(worker1BlockCount - worker2BlockCount);
+                if (blockCountDiff < minBlockCountDiff)
+                {
+                    minBlockCountDiff = blockCountDiff;
+                    bestSolution = (int[])blocks.Clone();
+                }
+                return true;
+            }
+
+            for (int blockIndex = nextBlockToTry; blockIndex < blockCount; blockIndex++)
+            {
+                if (blocks[blockIndex] != 0)   //blockWeights[block] < 0 -> block is removed, for second task
+                {   //block already assigned to current worker or another worker
+                    continue;
+                }
+
+                worker2Sum += blockWeights[blockIndex];
+                worker2BlockCount += 1;
+                blocks[blockIndex] = 2;
+                if (worker2Sum <= expectedSum)
+                {
+                    bool success = DivideWorkWorker2BestSolutionUtil(blocks, blockIndex + 1);
+                    if (success)
+                    {   //look for next solution
+                        //return true;
+                    }
+                }
+
+                //have not found solution with current block
+                worker2Sum -= blockWeights[blockIndex];
+                worker2BlockCount -= 1;
+                blocks[blockIndex] = 0;
+                //try next block
+            }
+
+            return false;
+        }
 
         // Mo¿na dopisywaæ pola i metody pomocnicze
 
