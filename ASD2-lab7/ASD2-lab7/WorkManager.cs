@@ -206,6 +206,10 @@ namespace ASD
                         success = DivideWorkWorker2BestSolutionUtil(blocks, nextBlockToTry);
                         if (success)
                         {
+                            if(minBlockCountDiff == 0)
+                            {
+                                return true;
+                            }
                             //return true;
                             //look for next solution
                         }
@@ -251,6 +255,10 @@ namespace ASD
                     if (success)
                     {   //look for next solution
                         //return true;
+                        if(minBlockCountDiff == 0)
+                        {
+                            return true;
+                        }
                     }
                 }
 
