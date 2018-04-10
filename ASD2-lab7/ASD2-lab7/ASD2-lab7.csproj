@@ -47,6 +47,7 @@
   <ItemGroup>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="WorkManager1.cs" />
     <Compile Include="WorkManager.cs" />
   </ItemGroup>
   <ItemGroup>

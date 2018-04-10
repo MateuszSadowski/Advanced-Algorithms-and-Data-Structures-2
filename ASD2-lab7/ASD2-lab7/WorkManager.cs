@@ -1,4 +1,4 @@
-using System;
+ï»¿using System;
 using System.Linq;
 
 namespace ASD
@@ -7,161 +7,131 @@ namespace ASD
     {
         /// <summary>
         /// Implementacja wersji 1
-        /// W tablicy blocks zapisane s¹ wagi wszystkich bloków do przypisania robotnikom.
-        /// Ka¿dy z nich powinien mieæ przypisane bloki sumie wag równej expectedBlockSum.
-        /// Metoda zwraca tablicê przypisuj¹c¹ ka¿demu z bloków jedn¹ z wartoœci:
-        /// 1 - jeœli blok zosta³ przydzielony 1. robotnikowi
-        /// 2 - jeœli blok zosta³ przydzielony 2. robotnikowi
-        /// 0 - jeœli blok nie zosta³ przydzielony do ¿adnego robotnika
-        /// Jeœli wymaganego podzia³u nie da siê zrealizowaæ metoda zwraca null.
+        /// W tablicy blocks zapisane sÂ¹ wagi wszystkich blokÃ³w do przypisania robotnikom.
+        /// KaÂ¿dy z nich powinien mieÃ¦ przypisane bloki sumie wag rÃ³wnej expectedBlockSum.
+        /// Metoda zwraca tablicÃª przypisujÂ¹cÂ¹ kaÂ¿demu z blokÃ³w jednÂ¹ z wartoÅ“ci:
+        /// 1 - jeÅ“li blok zostaÂ³ przydzielony 1. robotnikowi
+        /// 2 - jeÅ“li blok zostaÂ³ przydzielony 2. robotnikowi
+        /// 0 - jeÅ“li blok nie zostaÂ³ przydzielony do Â¿adnego robotnika
+        /// JeÅ“li wymaganego podziaÂ³u nie da siÃª zrealizowaÃ¦ metoda zwraca null.
         /// </summary>
-        /// 
-
-        public int[] workerSum;
+        ///
+        internal int worker1Sum;
+        internal int worker2Sum;
         public int expectedSum;
         public int[] blockWeights;
         public int blockCount;
 
         public int[] DivideWorkersWork(int[] blocks, int expectedBlockSum)
         {
+            //TODO: optimalisation: find smallest block weight and if workerSum > it, then cut branch
+            worker1Sum = 0;
+            worker2Sum = 0;
             expectedSum = expectedBlockSum;
             blockWeights = blocks;
             blockCount = blocks.Length;
-            workerSum = new int[3];     //indexing from 1;
-            workerSum[0] = -1;      //sentiel
 
-            int[] tmpBlocks = new int[blockCount];
+            int[] blocksAssignment = new int[blockCount];
 
-            workerSum[1] = 0;
-            bool result = DivideWorkersWorkUtil(1, tmpBlocks, 0);
-            if(!result)
-            {   //if could not be found for 1 worker then fail
-                return null;
+            if(expectedSum == 0)
+            {
+                return blocksAssignment;
             }
 
-            workerSum[2] = 0;
-            result = DivideWorkersWorkUtil(2, tmpBlocks, 0);
-            if (!result)
-            {   
-                return null;
+            bool foundSolution = DivideWorkWorker1Util(blocksAssignment, 0);
+
+            if(foundSolution)
+            {
+                return blocksAssignment;
             }
 
-            return tmpBlocks;
+            return null;
         }
 
-        public bool DivideWorkersWorkUtil(int workerNum, int[] blocks, int nextBlock)
+        internal bool DivideWorkWorker1Util(int[] blocks, int nextBlockToTry)
         {
-            if(workerSum[workerNum] == expectedSum)
+            if (worker1Sum == expectedSum)
             {
                 return true;
             }
 
-            for (int block = nextBlock; block < blockCount; block++)
+            for (int blockIndex = nextBlockToTry; blockIndex < blockCount; blockIndex++)
             {
-                if(blocks[block] != 0)   //blockWeights[block] < 0 -> block is removed, for second task
+                if (blocks[blockIndex] != 0)   //blockWeights[block] < 0 -> block is removed, for second task
                 {   //block already assigned to current worker or another worker
                     continue;
                 }
 
-                workerSum[workerNum] += blockWeights[block];
-                blocks[block] = workerNum;
-                if(workerSum[workerNum] <= expectedSum)
+                worker1Sum += blockWeights[blockIndex];
+                blocks[blockIndex] = 1;
+                if (worker1Sum <= expectedSum)
                 {
-                    bool success = DivideWorkersWorkUtil(workerNum, blocks, block + 1);
-                    if(success)
-                    {
+                    bool success = DivideWorkWorker1Util(blocks, blockIndex + 1);
+                    if (success)
+                    {   //try to find for worker 2
+                        success = DivideWorkWorker2Util(blocks, 0);
+                        if(success)
+                        {
+                            return true;
+                        }
+                    }
+                }
+
+                //have not found solution with current block
+                worker1Sum -= blockWeights[blockIndex];
+                blocks[blockIndex] = 0;
+                //try next block
+            }
+
+            return false;
+        }
+
+        internal bool DivideWorkWorker2Util(int[] blocks, int nextBlockToTry)
+        {
+            if (worker2Sum == expectedSum)
+            {
+                return true;
+            }
+
+            for (int blockIndex = nextBlockToTry; blockIndex < blockCount; blockIndex++)
+            {
+                if (blocks[blockIndex] != 0)   //blockWeights[block] < 0 -> block is removed, for second task
+                {   //block already assigned to current worker or another worker
+                    continue;
+                }
+
+                worker2Sum += blockWeights[blockIndex];
+                blocks[blockIndex] = 2;
+                if (worker2Sum <= expectedSum)
+                {
+                    bool success = DivideWorkWorker2Util(blocks, blockIndex + 1);
+                    if (success)
+                    {   //finish
                         return true;
                     }
                 }
 
                 //have not found solution with current block
-                workerSum[workerNum] -= blockWeights[block];
-                blocks[block] = 0;
+                worker2Sum -= blockWeights[blockIndex];
+                blocks[blockIndex] = 0;
                 //try next block
             }
 
-            //have not found solution with previous block choice, go back and choose different
             return false;
         }
-
         /// <summary>
         /// Implementacja wersji 2
-        /// Parametry i wynik s¹ analogiczne do wersji 1.
+        /// Parametry i wynik sÂ¹ analogiczne do wersji 1.
         /// </summary>
         /// 
-
-        public int[] bestSolution;
-        public int minBlockCountDiff;
-        public int workerCount = 2;
-        public int[] workerBlockCount;
-
         public int[] DivideWorkWithClosestBlocksCount(int[] blocks, int expectedBlockSum)
         {
-            expectedSum = expectedBlockSum;
-            blockWeights = blocks;
-            blockCount = blocks.Length;
-            workerSum = new int[3];     //indexing from 1;
-            workerSum[0] = -1;      //sentiel
-            workerBlockCount = new int[3];     //indexing from 1;
-            workerBlockCount[0] = -1;      //sentiel
 
-            bestSolution = null;
-            minBlockCountDiff = Int32.MaxValue;
-
-            int[] tmpBlocks = new int[blockCount];
-
-            workerSum[1] = 0;
-            workerBlockCount[1] = 0;
-            //DivideWorkersWorkUtilBestSolution(tmpBlocks, 0);
-
-            //workerSum[2] = 0;
-            //workerBlockCount[2] = 0;
-            //DivideWorkersWorkUtilBestSolution(tmpBlocks, 0);
-
-            return bestSolution;
+            return null;
         }
 
-        public void DivideWorkersWorkUtilBestSolution(int[] blocks, int nextBlock)
-        {
-            if (workerSum[1] == expectedSum && workerSum[2] == expectedSum)
-            {
-                int blockCountDiff = Math.Abs(workerBlockCount[1] - workerBlockCount[2]);
-                if(blockCountDiff < minBlockCountDiff)
-                {
-                    minBlockCountDiff = blockCountDiff;
-                    bestSolution = (int[])blocks.Clone();
-                }
-                return;
-            }
 
-            for (int workerNum = 1; workerNum <= workerCount; workerNum++)   //indexing from 1
-            {
-                for (int block = nextBlock; block < blockCount; block++)
-                {
-                    if (blocks[block] != 0 || blockWeights[block] < 0)   //blockWeights[block] < 0 -> block is removed, for second task
-                    {   //block already assigned to current worker or another worker
-                        continue;
-                    }
-
-                    workerSum[workerNum] += blockWeights[block];
-                    blocks[block] = workerNum;
-                    workerBlockCount[workerNum] += 1;
-
-                    if (workerSum[workerNum] <= expectedSum)
-                    {
-                        DivideWorkersWorkUtilBestSolution(blocks, block + 1);
-                    }
-
-                    //regardless of success, look for different solution
-                    workerSum[workerNum] -= blockWeights[block];
-                    blocks[block] = 0;
-                    workerBlockCount[workerNum] -= 1;
-                    //try next block
-                }
-            }
-        }
-
-// Mo¿na dopisywaæ pola i metody pomocnicze
+        // MoÂ¿na dopisywaÃ¦ pola i metody pomocnicze
 
     }
 }
