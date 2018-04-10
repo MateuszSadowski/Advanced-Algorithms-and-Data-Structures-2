@@ -24,7 +24,6 @@ namespace ASD
 
         public int[] DivideWorkersWork(int[] blocks, int expectedBlockSum)
         {
-            //TODO: optimalisation: find smallest block weight and if workerSum > it, then cut branch
             worker1Sum = 0;
             worker2Sum = 0;
             expectedSum = expectedBlockSum;
@@ -204,7 +203,7 @@ namespace ASD
                     bool success = DivideWorkWorker1BestSolutionUtil(blocks, blockIndex + 1);
                     if (success)
                     {   //try to find for worker 2
-                        success = DivideWorkWorker2BestSolutionUtil(blocks, 0);
+                        success = DivideWorkWorker2BestSolutionUtil(blocks, nextBlockToTry);
                         if (success)
                         {
                             //return true;
@@ -246,7 +245,7 @@ namespace ASD
                 worker2Sum += blockWeights[blockIndex];
                 worker2BlockCount += 1;
                 blocks[blockIndex] = 2;
-                if (worker2Sum <= expectedSum)
+                if (worker2Sum <= expectedSum - minBlockWeight || worker2Sum == expectedSum)
                 {
                     bool success = DivideWorkWorker2BestSolutionUtil(blocks, blockIndex + 1);
                     if (success)
