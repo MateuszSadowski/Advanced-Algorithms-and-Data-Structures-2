@@ -18,9 +18,9 @@ namespace ASD
         ///
         internal int worker1Sum;
         internal int worker2Sum;
-        public int expectedSum;
-        public int[] blockWeights;
-        public int blockCount;
+        internal int expectedSum;
+        internal int[] blockWeights;
+        internal int blockCount;
 
         public int[] DivideWorkersWork(int[] blocks, int expectedBlockSum)
         {
@@ -125,10 +125,13 @@ namespace ASD
         /// </summary>
         /// 
 
-        public int[] bestSolution;
-        public int minBlockCountDiff;
-        public int worker1BlockCount;
-        public int worker2BlockCount;
+        internal int[] bestSolution;
+        internal int minBlockCountDiff;
+        internal int worker1BlockCount;
+        internal int worker2BlockCount;
+
+        internal int minBlockWeight, maxBlockWeight;
+        internal int sumBlockWeights;
 
         public int[] DivideWorkWithClosestBlocksCount(int[] blocks, int expectedBlockSum)
         {
@@ -140,9 +143,33 @@ namespace ASD
 
             int[] blocksAssignment = new int[blockCount];
 
+            //optimalization
+            minBlockWeight = Int32.MaxValue;
+            maxBlockWeight = Int32.MinValue;
+            sumBlockWeights = 0;
+            foreach (var weight in blockWeights)
+            {
+                if (minBlockWeight > weight)
+                {
+                    minBlockWeight = weight;
+                }
+
+                if (maxBlockWeight < weight)
+                {
+                    maxBlockWeight = weight;
+                }
+
+                sumBlockWeights += weight;
+            }
+
             if (expectedSum == 0)
             {
                 return blocksAssignment;
+            }
+
+            if(expectedSum > sumBlockWeights / 2)
+            {
+                return null;
             }
 
             bestSolution = null;
@@ -172,7 +199,7 @@ namespace ASD
                 worker1Sum += blockWeights[blockIndex];
                 worker1BlockCount += 1;
                 blocks[blockIndex] = 1;
-                if (worker1Sum <= expectedSum)
+                if (worker1Sum <= expectedSum - minBlockWeight || worker1Sum == expectedSum)
                 {
                     bool success = DivideWorkWorker1BestSolutionUtil(blocks, blockIndex + 1);
                     if (success)
