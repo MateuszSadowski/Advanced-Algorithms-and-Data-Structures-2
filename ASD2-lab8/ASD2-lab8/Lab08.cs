@@ -23,21 +23,22 @@ namespace Lab08
                 throw new ArgumentException();
             }
 
-            int begining = a[0];
-            int elementsPlaced = 1;
+            int lastPositionWherePlaced = a[0];
+            int elementsToPlace = k - 1;
             List<int> tmpSolution = new List<int>();
             tmpSolution.Add(a[0]);
 
             for (int i = 1; i < n; i++)
             {
-                if(a[i] - begining >= dist)
+                int nextPosition = a[i];
+                if(nextPosition - lastPositionWherePlaced >= dist)
                 {
-                    tmpSolution.Add(a[i]);
-                    begining = a[i];
-                    elementsPlaced++;
+                    tmpSolution.Add(nextPosition);
+                    lastPositionWherePlaced = nextPosition;
+                    elementsToPlace -= 1;
                 }
 
-                if (elementsPlaced == k)
+                if (elementsToPlace == 0)
                 {
                     exampleSolution = tmpSolution;
                     return true;
@@ -57,18 +58,18 @@ namespace Lab08
         /// <returns>Maksymalny możliwy dystans między wybranymi elementami</returns>
         public int LargestMinDistance(int[] a, int k, out List<int> exampleSolution)
         {
-            int result = -1;
+            int maxMinimalDistance = Int32.MinValue;
             int n = a.Length;
             if (n <= 1 || k <= 1 || k > n || n > 100000)
             {
                 throw new ArgumentException();
             }
 
-            int left = a[0], right = a[n - 1];
+            int smallestDistance = 0, largestDistance = a[n - 1] - a[0] + 1;
             List<int> tmpSolution = new List<int>();
             List<int> bestSolution = new List<int>();
 
-            if (left - right == 0)
+            if (smallestDistance - largestDistance == 0)
             {
                 CanPlaceElementsInDistance(a, 0, k, out tmpSolution);
 
@@ -76,40 +77,41 @@ namespace Lab08
                 return 0;
             }
 
-            while (left < right)
+            //Perform binary search for best distance
+            while (smallestDistance < largestDistance)
             {
-                int mid = (left + right) / 2;
+                int mediumDistance = (smallestDistance + largestDistance) / 2;
 
-                if(CanPlaceElementsInDistance(a, mid, k, out tmpSolution))
+                if(CanPlaceElementsInDistance(a, mediumDistance, k, out tmpSolution))
                 {
-                    if(mid > result)
+                    if(mediumDistance > maxMinimalDistance)
                     {
-                        result = mid;
+                        maxMinimalDistance = mediumDistance;
                         bestSolution = tmpSolution;
                     }
-                    left = mid + 1;
+                    smallestDistance = mediumDistance + 1;  //Look for bigger
                 }
                 else
                 {
-                    right = mid;
+                    largestDistance = mediumDistance;   //Look for smaller
                 }
 
-                if(result == -1 && left == right)
+                if(maxMinimalDistance == -1 && smallestDistance == largestDistance)
                 {
                     if (CanPlaceElementsInDistance(a, 0, k, out tmpSolution))
                     {
-                        if (mid > result)
+                        if (mediumDistance > maxMinimalDistance)
                         {
-                            result = 0;
+                            maxMinimalDistance = 0;
                             bestSolution = tmpSolution;
                         }
-                        left = mid + 1;
+                        smallestDistance = mediumDistance + 1;
                     }
                 }
             }
 
             exampleSolution = bestSolution;
-            return result;
+            return maxMinimalDistance;
         }
 
     }
