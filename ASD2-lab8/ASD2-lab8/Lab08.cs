@@ -58,7 +58,7 @@ namespace Lab08
         /// <returns>Maksymalny możliwy dystans między wybranymi elementami</returns>
         public int LargestMinDistance(int[] a, int k, out List<int> exampleSolution)
         {
-            int maxMinimalDistance = Int32.MinValue;
+            int maxMinimalDistance = -1;
             int n = a.Length;
             if (n <= 1 || k <= 1 || k > n || n > 100000)
             {
@@ -69,6 +69,7 @@ namespace Lab08
             List<int> tmpSolution = new List<int>();
             List<int> bestSolution = new List<int>();
 
+            // e.g. a = [2 2 2 2 2]
             if (smallestDistance - largestDistance == 0)
             {
                 CanPlaceElementsInDistance(a, 0, k, out tmpSolution);
@@ -78,7 +79,7 @@ namespace Lab08
             }
 
             //Perform binary search for best distance
-            while (smallestDistance < largestDistance)
+            while (smallestDistance <= largestDistance)
             {
                 int mediumDistance = (smallestDistance + largestDistance) / 2;
 
@@ -93,21 +94,21 @@ namespace Lab08
                 }
                 else
                 {
-                    largestDistance = mediumDistance;   //Look for smaller
+                    largestDistance = mediumDistance - 1;   //Look for smaller
                 }
 
-                if(maxMinimalDistance == -1 && smallestDistance == largestDistance)
-                {
-                    if (CanPlaceElementsInDistance(a, 0, k, out tmpSolution))
-                    {
-                        if (mediumDistance > maxMinimalDistance)
-                        {
-                            maxMinimalDistance = 0;
-                            bestSolution = tmpSolution;
-                        }
-                        smallestDistance = mediumDistance + 1;
-                    }
-                }
+                //if(maxMinimalDistance == -1 && smallestDistance == largestDistance)
+                //{
+                //    if (CanPlaceElementsInDistance(a, 0, k, out tmpSolution))
+                //    {
+                //        if (mediumDistance > maxMinimalDistance)
+                //        {
+                //            maxMinimalDistance = 0;
+                //            bestSolution = tmpSolution;
+                //        }
+                //        smallestDistance = mediumDistance + 1;
+                //    }
+                //}
             }
 
             exampleSolution = bestSolution;
