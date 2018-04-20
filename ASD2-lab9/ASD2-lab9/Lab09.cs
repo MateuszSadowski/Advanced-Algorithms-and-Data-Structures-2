@@ -74,7 +74,7 @@ namespace ASD
                     if (e.From > e.To)  //graph directed, check only edges one direction
                         continue;
 
-                    if (tmpVertexProcessed[e.To] || tmpVertexProcessed[e.From]) //vertex not viable
+                    if (tmpVertexProcessed[e.To]) //vertex not viable
                         continue;
 
                     //add edge to matching
