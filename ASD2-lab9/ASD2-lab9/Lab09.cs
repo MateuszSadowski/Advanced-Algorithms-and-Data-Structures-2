@@ -31,114 +31,99 @@ namespace ASD
         /// </remarks>
         /// 
 
-        private int[] verticesStatus;
-        private Graph inputGraph;
-        private int goalMatchingSize;
-        private Edge[] inducedMatching;
-        private Edge[] edges;
-        private int resultMatchingSize;
+        internal Graph inputGraph;
+        internal int targetMatchingSize;
+
+        internal Edge[] resultMatching;
+        internal int resultMatchingSize;
+
+        internal int tmpMatchingSize;
+        internal bool[] tmpVertexProcessed;
         public bool InducedMatching(Graph graph, int k, out Edge[] matching)
         {
-            verticesStatus = new int[graph.VerticesCount];
             inputGraph = graph;
-            goalMatchingSize = k;
-            edges = new Edge[graph.EdgesCount];
-            matching = inducedMatching = null;
+            targetMatchingSize = k;
 
-            int edgesCount = 0;
-            for (int v = 0; v < graph.VerticesCount; v++)
-            {
-                foreach (var e in graph.OutEdges(v))
-                {
-                    if (e.From < e.To)
-                        edges[edgesCount++] = e;
-                }
-            }
+            resultMatching = null;
+            resultMatchingSize = 0;
 
-            //GraphExport ge = new GraphExport();
-            //ge.Export(graph);
+            tmpMatchingSize = 0;
+            tmpVertexProcessed = new bool[graph.VerticesCount];
 
-            bool foundMatching = InducedMatchingUtil(new Edge[graph.EdgesCount], 0);
+            bool foundMatching = InducedMatchingUtil(0, new Edge[graph.EdgesCount]);
 
-            if(foundMatching)
-            {
-                matching = new Edge[resultMatchingSize];
-                for (int i = 0; i < resultMatchingSize; i++)
-                {
-                    matching[i] = inducedMatching[i];
-                }
-            }
-
+            matching = resultMatching;
             return foundMatching;
         }
 
-        private bool InducedMatchingUtil(Edge[] matching, int matchingSize)
+        internal bool InducedMatchingUtil(int nextVertex, Edge[] matching)
         {
-            if(matchingSize == goalMatchingSize)
-            {   //is solution
-                inducedMatching = matching;
-                resultMatchingSize = matchingSize;
-                return true;    //finish
+            if(tmpMatchingSize == targetMatchingSize)
+            {
+                resultMatching = resizeMatchingArray(matching);
+                return true;
             }
 
-            //cut condition
-            //if cannot add more edges, return
-
-            //TODO: start from edge from the upper lever
-            foreach (var e in edges)
+            for (int v = nextVertex; v < inputGraph.VerticesCount; v++)
             {
-                if (verticesStatus[e.From] > 0 || verticesStatus[e.To] > 0)
+                if (tmpVertexProcessed[v])  //TODO: might be obsolete
                     continue;
 
-                //Add e to matching
-                verticesStatus[e.From] = Int32.MaxValue; 
-                verticesStatus[e.To] = Int32.MaxValue;
-
-                matching[matchingSize] = e;
-
-                foreach (var e2 in inputGraph.OutEdges(e.From))
+                foreach (var e in inputGraph.OutEdges(v))
                 {
-                    if (verticesStatus[e2.To] > 0)
-                        continue;    
-
-                    verticesStatus[e2.To] = e.From + 1;  
-                }
-
-                foreach (var e2 in inputGraph.OutEdges(e.To))
-                {
-                    if (verticesStatus[e2.To] > 0)
+                    if (e.From > e.To)  //graph directed, check only edges one direction
                         continue;
 
-                    verticesStatus[e2.To] = e.To + 1; 
+                    if (tmpVertexProcessed[e.To] || tmpVertexProcessed[e.From]) //vertex not viable
+                        continue;
+
+                    //add edge to matching
+                    matching[tmpMatchingSize++] = e;
+                    tmpVertexProcessed[e.From] = tmpVertexProcessed[e.To] = true;
+
+                    foreach (var e2 in inputGraph.OutEdges(e.From))
+                    {
+                        tmpVertexProcessed[e2.To] = true;
+                    }
+
+                    foreach (var e2 in inputGraph.OutEdges(e.To))
+                    {
+                        tmpVertexProcessed[e2.To] = true;
+                    }
+
+                    bool success = InducedMatchingUtil(v + 1, matching);
+                    if (success)
+                        return true;
+
+                    //remove edge and try next
+
+                    foreach (var e2 in inputGraph.OutEdges(e.From))
+                    {
+                        tmpVertexProcessed[e2.To] = false;
+                    }
+
+                    foreach (var e2 in inputGraph.OutEdges(e.To))
+                    {
+                        tmpVertexProcessed[e2.To] = false;
+                    }
+
+                    tmpVertexProcessed[e.From] = tmpVertexProcessed[e.To] = false;
+                    tmpMatchingSize--;
                 }
-
-                //state viable condition
-                bool foundMatching = InducedMatchingUtil(matching, matchingSize + 1);   //Add another edge
-                if (foundMatching)
-                    return true;
-
-                //Remove e from matching
-                verticesStatus[e.From] = 0; // 0 -> vertex unprocessed
-                verticesStatus[e.To] = 0;
-
-                //matching[matchingSize] = null;  //TODO: how to remove edge?
-
-                foreach (var e2 in inputGraph.OutEdges(e.From))
-                {
-                    if(verticesStatus[e2.To] == e.From + 1)
-                        verticesStatus[e2.To] = 0;
-                }
-
-                foreach (var e2 in inputGraph.OutEdges(e.To))
-                {
-                    if (verticesStatus[e2.To] == e.To + 1)
-                        verticesStatus[e2.To] = 0;
-                }
-
-                //Try next edge
-            } 
+            }
 
             return false;
+        }
+
+        internal Edge[] resizeMatchingArray(Edge[] matching)
+        {
+            //if (tmpMatchingSize == 0)
+            //    return null;
+
+            resultMatchingSize = tmpMatchingSize;
+            Edge[] result = new Edge[resultMatchingSize];
+            Array.Copy(matching, result, resultMatchingSize);
+            return result;
         }
 
         /// <summary>
@@ -152,202 +137,11 @@ namespace ASD
         ///     1.5  -  dzialajacy algorytm (testy podstawowe)
         ///     0.5  -  testy wydajnościowe
         /// </remarks>
-        /// 
-
-        private double maxWeight;
-        private double tmpWeight;
-        private double sumMaxWeight;
-        private double weightInLeftEdges;
         public double MaximalInducedMatching(Graph graph, out Edge[] matching)
         {
-            verticesStatus = new int[graph.VerticesCount];
-            inputGraph = graph;
-            edges = new Edge[graph.EdgesCount];
-            matching = inducedMatching = null;
-
-            maxWeight = Int32.MinValue;
-            tmpWeight = 0;
-            sumMaxWeight = 0;
-
-            int edgesCount = 0;
-            for (int v = 0; v < graph.VerticesCount; v++)
-            {
-                foreach (var e in graph.OutEdges(v))
-                {
-                    if (e.From < e.To)
-                    {
-                        edges[edgesCount++] = e;
-                        sumMaxWeight += e.Weight;
-                    }
-                }
-            }
-
-            weightInLeftEdges = sumMaxWeight;
-
-            //GraphExport ge = new GraphExport();
-            //ge.Export(graph);
-
-            while(InducedMatching)
-            MaximalInducedMatchingUtil(new Edge[graph.EdgesCount], 0);
-
-                matching = new Edge[resultMatchingSize];
-                for (int i = 0; i < resultMatchingSize; i++)
-                {
-                    matching[i] = inducedMatching[i];
-                }
-
-            return maxWeight;
+            matching = null;
+            return 0;
         }
-
-        private bool MaximalInducedMatchingUtil(Edge[] matching, int matchingSize)
-        {
-            if (matchingSize == goalMatchingSize)
-            {   //is solution
-                inducedMatching = matching;
-                resultMatchingSize = matchingSize;
-                return true;    //finish
-            }
-
-            //cut condition
-            //if cannot add more edges, return
-
-            //TODO: start from edge from the upper lever
-            foreach (var e in edges)
-            {
-                if (verticesStatus[e.From] > 0 || verticesStatus[e.To] > 0)
-                    continue;
-
-                //Add e to matching
-                verticesStatus[e.From] = Int32.MaxValue;
-                verticesStatus[e.To] = Int32.MaxValue;
-
-                matching[matchingSize] = e;
-
-                foreach (var e2 in inputGraph.OutEdges(e.From))
-                {
-                    if (verticesStatus[e2.To] > 0)
-                        continue;
-
-                    verticesStatus[e2.To] = e.From + 1;
-                }
-
-                foreach (var e2 in inputGraph.OutEdges(e.To))
-                {
-                    if (verticesStatus[e2.To] > 0)
-                        continue;
-
-                    verticesStatus[e2.To] = e.To + 1;
-                }
-
-                //state viable condition
-                bool foundMatching = InducedMatchingUtil(matching, matchingSize + 1);   //Add another edge
-                if (foundMatching)
-                    return true;
-
-                //Remove e from matching
-                verticesStatus[e.From] = 0; // 0 -> vertex unprocessed
-                verticesStatus[e.To] = 0;
-
-                //matching[matchingSize] = null;  //TODO: how to remove edge?
-
-                foreach (var e2 in inputGraph.OutEdges(e.From))
-                {
-                    if (verticesStatus[e2.To] == e.From + 1)
-                        verticesStatus[e2.To] = 0;
-                }
-
-                foreach (var e2 in inputGraph.OutEdges(e.To))
-                {
-                    if (verticesStatus[e2.To] == e.To + 1)
-                        verticesStatus[e2.To] = 0;
-                }
-
-                //Try next edge
-            }
-
-            return false;
-        }
-
-        //private void MaximalInducedMatchingUtil(Edge[] matching, int matchingSize)
-        //{
-        //    if (tmpWeight > maxWeight)
-        //    {   //is solution
-        //        inducedMatching = (Edge[])matching.Clone();
-        //        resultMatchingSize = matchingSize;
-        //        maxWeight = tmpWeight;
-        //    }
-
-        //    //cut condition
-        //    //if cannot add more edges, return
-
-        //    //TODO: start from edge from the upper level
-        //    for(int i = matchingSize; i < edges.Length; i++)
-        //    {
-        //        Edge e = edges[i];
-        //        if (verticesStatus[e.From] > 0 || verticesStatus[e.To] > 0)
-        //            continue;
-
-        //        //Add e to matching
-        //        verticesStatus[e.From] = Int32.MaxValue;
-        //        verticesStatus[e.To] = Int32.MaxValue;
-
-        //        matching[matchingSize] = e;
-        //        tmpWeight += e.Weight;
-        //        weightInLeftEdges -= e.Weight;
-
-        //        foreach (var e2 in inputGraph.OutEdges(e.From))
-        //        {
-        //            if (verticesStatus[e2.To] > 0)
-        //                continue;
-
-        //            verticesStatus[e2.To] = e.From + 1;
-        //            weightInLeftEdges -= e2.Weight;
-        //        }
-
-        //        foreach (var e2 in inputGraph.OutEdges(e.To))
-        //        {
-        //            if (verticesStatus[e2.To] > 0)
-        //                continue;
-
-        //            verticesStatus[e2.To] = e.To + 1;
-        //            weightInLeftEdges -= e2.Weight;
-        //        }
-
-        //        //state viable condition
-        //        if(tmpWeight + weightInLeftEdges > maxWeight)
-        //            MaximalInducedMatchingUtil(matching, matchingSize + 1);   //Add another edge
-
-        //        //Remove e from matching
-        //        verticesStatus[e.From] = 0; // 0 -> vertex unprocessed
-        //        verticesStatus[e.To] = 0;
-
-        //        //matching[matchingSize] = null;  //TODO: how to remove edge?
-        //        tmpWeight -= e.Weight;
-        //        weightInLeftEdges += e.Weight;
-
-        //        foreach (var e2 in inputGraph.OutEdges(e.From))
-        //        {
-        //            if (verticesStatus[e2.To] == e.From + 1)
-        //            {
-        //                verticesStatus[e2.To] = 0;
-        //                weightInLeftEdges += e2.Weight;
-        //            }
-        //        }
-
-        //        foreach (var e2 in inputGraph.OutEdges(e.To))
-        //        {
-        //            if (verticesStatus[e2.To] == e.To + 1)
-        //            {
-        //                verticesStatus[e2.To] = 0;
-        //                weightInLeftEdges += e2.Weight;
-        //            }
-        //        }
-
-        //        //Try next edge
-        //    }
-
-        //    return;
-        //}
 
         //funkcje pomocnicze
 
