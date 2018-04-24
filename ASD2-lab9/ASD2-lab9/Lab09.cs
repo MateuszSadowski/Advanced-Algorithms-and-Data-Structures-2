@@ -38,7 +38,7 @@ namespace ASD
         internal int resultMatchingSize;
 
         internal int tmpMatchingSize;
-        internal bool[] tmpVertexProcessed;
+        //internal bool[] tmpVertexProcessed;
         public bool InducedMatching(Graph graph, int k, out Edge[] matching)
         {
             inputGraph = graph;
@@ -48,25 +48,25 @@ namespace ASD
             resultMatchingSize = 0;
 
             tmpMatchingSize = 0;
-            tmpVertexProcessed = new bool[graph.VerticesCount];
+            //tmpVertexProcessed = new bool[graph.VerticesCount];
 
-            bool foundMatching = InducedMatchingUtil(0, new Edge[graph.EdgesCount]);
+            bool foundMatching = InducedMatchingUtil(0, new Edge[graph.EdgesCount], new bool[graph.VerticesCount]);
 
             matching = resultMatching;
             return foundMatching;
         }
 
-        internal bool InducedMatchingUtil(int nextVertex, Edge[] matching)
+        internal bool InducedMatchingUtil(int from, Edge[] matching, bool[] verticesProcessed)
         {
             if(tmpMatchingSize == targetMatchingSize)
             {
-                resultMatching = resizeMatchingArray(matching);
+                resultMatching = resizeMatchingArray(matching); //TODO: throw away
                 return true;
             }
 
-            for (int v = nextVertex; v < inputGraph.VerticesCount; v++)
+            for (int v = from; v < inputGraph.VerticesCount; v++)
             {
-                if (tmpVertexProcessed[v])  //TODO: might be obsolete
+                if (verticesProcessed[v])  //TODO: might be obsolete
                     continue;
 
                 foreach (var e in inputGraph.OutEdges(v))
@@ -74,40 +74,42 @@ namespace ASD
                     if (e.From > e.To)  //graph directed, check only edges one direction
                         continue;
 
-                    if (tmpVertexProcessed[e.To]) //vertex not viable
+                    if (verticesProcessed[e.To]) //vertex not viable
                         continue;
 
                     //add edge to matching
                     matching[tmpMatchingSize++] = e;
-                    tmpVertexProcessed[e.From] = tmpVertexProcessed[e.To] = true;
+                    bool[] tmpVerticesProcessed = new bool[inputGraph.VerticesCount];
+                    Array.Copy(verticesProcessed, tmpVerticesProcessed, verticesProcessed.Length);
+                    tmpVerticesProcessed[e.From] = tmpVerticesProcessed[e.To] = true;
 
                     foreach (var e2 in inputGraph.OutEdges(e.From))
                     {
-                        tmpVertexProcessed[e2.To] = true;
+                        tmpVerticesProcessed[e2.To] = true;
                     }
 
                     foreach (var e2 in inputGraph.OutEdges(e.To))
                     {
-                        tmpVertexProcessed[e2.To] = true;
+                        tmpVerticesProcessed[e2.To] = true;
                     }
 
-                    bool success = InducedMatchingUtil(v + 1, matching);
+                    bool success = InducedMatchingUtil(v + 1, matching, tmpVerticesProcessed);
                     if (success)
                         return true;
 
                     //remove edge and try next
+                    //TODO: obsolete
+                    //foreach (var e2 in inputGraph.OutEdges(e.From))
+                    //{
+                    //    verticesProcessed[e2.To] = false;
+                    //}
 
-                    foreach (var e2 in inputGraph.OutEdges(e.From))
-                    {
-                        tmpVertexProcessed[e2.To] = false;
-                    }
+                    //foreach (var e2 in inputGraph.OutEdges(e.To))
+                    //{
+                    //    verticesProcessed[e2.To] = false;
+                    //}
 
-                    foreach (var e2 in inputGraph.OutEdges(e.To))
-                    {
-                        tmpVertexProcessed[e2.To] = false;
-                    }
-
-                    tmpVertexProcessed[e.From] = tmpVertexProcessed[e.To] = false;
+                    //verticesProcessed[e.From] = verticesProcessed[e.To] = false;
                     tmpMatchingSize--;
                 }
             }
