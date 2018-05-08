@@ -32,53 +32,22 @@ namespace ASD
         {
             //GraphExport ge = new GraphExport();
             //ge.Export(G);
-            //if(G.VerticesCount == 1)
-            //{
-            //    return G;
-            //}
-            if (demands.Aggregate((a, b) => a + b) != 0)
+            if(!CanBeFeasible(demands))
             {
                 return null;
             }
 
             Graph seekFlowGraph = BuildSeekFlowGraph(G, demands);
-            //var circulationFlow = MaxFlowGraphExtender.FordFulkersonDinicMaxFlow(seekFlowGraph, 0, 1, MaxFlowGraphExtender.OriginalDinicBlockingFlow);
-
-            //double sumFromSource = 0, sumToTarget = 0;
-            //foreach (var e in seekFlowGraph.OutEdges(0))
-            //{
-            //    sumFromSource += e.Weight;
-            //}
-            //for (int v = 2; v < seekFlowGraph.VerticesCount; v++)
-            //{
-            //        foreach (var e in seekFlowGraph.OutEdges(v))
-            //        {
-            //            if(e.To == 1)
-            //                sumToTarget += e.Weight;
-            //        }
-            //}
-
-            //if (sumFromSource != sumToTarget || sumFromSource == sumToTarget && sumToTarget != 0 && circulationFlow.value == 0)
-            //{   //no solution
-            //    return null;
-            //}
-
-            //Graph c = circulationFlow.flow.IsolatedVerticesGraph(true, G.VerticesCount);
-
-            //for (int v = 2; v < G.VerticesCount + 2; v++)
-            //{
-            //    foreach (var e in circulationFlow.flow.OutEdges(v))
-            //    {
-            //        if(e.To != 0 && e.To != 1)
-            //            c.AddEdge(v - 2, e.To - 2, e.Weight);
-            //    }
-            //}
-
-            //return c;  // zmienić
             var circulationFlow = SeekCirculation(seekFlowGraph, 0, 1);
             if (circulationFlow.flow == null)
                 return null;
+
             return BuildAnswer(G, circulationFlow);
+        }
+
+        internal bool CanBeFeasible(double[] demands)
+        {
+            return demands.Aggregate((a, b) => a + b) == 0;
         }
 
         internal (double val, Graph flow) SeekCirculation(Graph seekFlowGraph, int source, int target)
@@ -99,10 +68,6 @@ namespace ASD
                 }
             }
 
-            //if (sumFromSource != sumToTarget || sumFromSource == sumToTarget && sumToTarget != 0 && circulationFlow.value == 0)
-            //{   //no solution
-            //    return (0, null);
-            //}
             if(sumToTarget != circulationFlow.value)
             {
                 return (0, null);
@@ -177,18 +142,24 @@ namespace ASD
         internal double[,] edgeWeightsInLowerBounds;
         public Graph FindConstrainedFlow(int source, int sink, Graph G, Graph lowerBounds)
         {
-            //var ge = new GraphExport();
+            var ge = new GraphExport();
             //ge.Export(lowerBounds);
             //ge.Export(G);
             edgeWeightsInLowerBounds = new double[G.VerticesCount, G.VerticesCount];
             double[] demands = FindDemands(source, sink, lowerBounds);
+            if (!CanBeFeasible(demands))
+            {
+                return null;
+            }
             var seekFlowGraph = BuildSeekConstrainedFlowGraph(source, sink, G, demands);
             //ge.Export(seekFlowGraph);
             var circulationFlow = SeekConstrainedCirculation(seekFlowGraph, 0, 1);
             if (circulationFlow.flow == null)
                 return null;
-            //return BuildAnswerConstrainedFlow(G, circulationFlow);
-            return lowerBounds;  // zmienić
+            Graph flow = BuildAnswerConstrainedFlow(source, sink, G, circulationFlow);
+            //ge.Export(flow);
+            return flow;
+            //return lowerBounds;  // zmienić
         }
 
         internal (double val, Graph flow) SeekConstrainedCirculation(Graph seekFlowGraph, int source, int target)
@@ -202,48 +173,56 @@ namespace ASD
             }
             for (int v = 2; v < seekFlowGraph.VerticesCount; v++)
             {
-                foreach (var e in circulationFlow.flow.OutEdges(v))
+                foreach (var e in seekFlowGraph.OutEdges(v))
                 {
                     if (e.To == 1)
                         sumToTarget += e.Weight;
                 }
             }
 
-            if (sumFromSource != sumToTarget || sumFromSource == sumToTarget && sumToTarget != 0 && circulationFlow.value == 0)
-            {   //no solution
+            //if (sumFromSource != sumToTarget || sumFromSource == sumToTarget && sumToTarget != 0 && circulationFlow.value == 0)
+            //{   //no solution
+            //    return (0, null);
+            //}
+
+            if (sumToTarget != circulationFlow.value)
+            {
                 return (0, null);
             }
 
             return circulationFlow;
         }
 
-        //internal Graph BuildAnswerConstrainedFlow(Graph G, (double val, Graph flow) circulationFlow)
-        //{
-        //    Graph c = circulationFlow.flow.IsolatedVerticesGraph(true, G.VerticesCount);
+        internal Graph BuildAnswerConstrainedFlow(int source, int target, Graph G, (double val, Graph flow) circulationFlow)
+        {
+            Graph c = circulationFlow.flow.IsolatedVerticesGraph(true, G.VerticesCount);
 
-        //    for (int v = 2; v < G.VerticesCount + 2; v++)
-        //    {
-        //        foreach (var e in circulationFlow.flow.OutEdges(v))
-        //        {
-        //            if (e.To != 0 && e.To != 1)
-        //                c.AddEdge(v - 2, e.To - 2, e.Weight);
-        //        }
-        //    }
+            for (int v = 2; v < G.VerticesCount + 2; v++)
+            {
+                foreach (var e in circulationFlow.flow.OutEdges(v))
+                {
+                    if(e.From == target + 2 && e.To == source + 2)
+                        continue;
 
-        //    return c;  // zmienić
-        //}
+                    if (e.To != 0 && e.To != 1)
+                        c.AddEdge(v - 2, e.To - 2, e.Weight + edgeWeightsInLowerBounds[e.From - 2, e.To - 2]);
+                    //c.AddEdge(v - 2, e.To - 2, e.Weight);
+                }
+            }
+
+            return c;  // zmienić
+        }
 
         internal double[] FindDemands(int source, int sink, Graph lowerBounds)
         {
             double[] demands = new double[lowerBounds.VerticesCount];
             for (int v = 0; v < lowerBounds.VerticesCount; v++)
             {
-                //if (v == source || v == sink)
-                //    continue;
-
                 foreach (var e in lowerBounds.OutEdges(v))
                 {
                     edgeWeightsInLowerBounds[e.From, e.To] = e.Weight;
+                    //demands[v] -= e.Weight;
+                    //demands[e.To] += e.Weight;
                     demands[v] += e.Weight;
                     demands[e.To] -= e.Weight;
                 }
@@ -270,8 +249,9 @@ namespace ASD
             for (int v = 0; v < n; v++)
             {
                 foreach (var e in G.OutEdges(v))
-                {   //TODO: eG.Weight - eLowerBounds.Weight
-                    h.AddEdge(e.From + 2, e.To + 2, e.Weight - edgeWeightsInLowerBounds[e.From, e.To]);
+                {
+                    //h.AddEdge(e.From + 2, e.To + 2, e.Weight - edgeWeightsInLowerBounds[e.From, e.To]);
+                    h.AddEdge(e.From + 2, e.To + 2, e.Weight);
                 }
             }
 
