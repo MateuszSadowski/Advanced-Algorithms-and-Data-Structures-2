@@ -1,4 +1,5 @@
 ﻿using ASD.Graphs;
+using System.Linq;
 
 namespace ASD
 {
@@ -35,6 +36,10 @@ namespace ASD
             //{
             //    return G;
             //}
+            if (demands.Aggregate((a, b) => a + b) != 0)
+            {
+                return null;
+            }
 
             Graph seekFlowGraph = BuildSeekFlowGraph(G, demands);
             //var circulationFlow = MaxFlowGraphExtender.FordFulkersonDinicMaxFlow(seekFlowGraph, 0, 1, MaxFlowGraphExtender.OriginalDinicBlockingFlow);
@@ -94,8 +99,12 @@ namespace ASD
                 }
             }
 
-            if (sumFromSource != sumToTarget || sumFromSource == sumToTarget && sumToTarget != 0 && circulationFlow.value == 0)
-            {   //no solution
+            //if (sumFromSource != sumToTarget || sumFromSource == sumToTarget && sumToTarget != 0 && circulationFlow.value == 0)
+            //{   //no solution
+            //    return (0, null);
+            //}
+            if(sumToTarget != circulationFlow.value)
+            {
                 return (0, null);
             }
 
