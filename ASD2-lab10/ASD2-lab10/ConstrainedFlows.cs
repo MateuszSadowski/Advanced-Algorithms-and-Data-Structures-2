@@ -144,7 +144,7 @@ namespace ASD
         public Graph FindConstrainedFlow(int source, int sink, Graph G, Graph lowerBounds)
         {
             edgeRemoved = false;
-            var ge = new GraphExport();
+            //var ge = new GraphExport();
             //ge.Export(lowerBounds);
             //ge.Export(G);
             edgeWeightsInLowerBounds = new double[G.VerticesCount, G.VerticesCount];
