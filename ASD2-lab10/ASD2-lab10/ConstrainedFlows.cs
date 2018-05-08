@@ -140,8 +140,10 @@ namespace ASD
         /// </hint>
         /// 
         internal double[,] edgeWeightsInLowerBounds;
+        internal bool edgeRemoved;
         public Graph FindConstrainedFlow(int source, int sink, Graph G, Graph lowerBounds)
         {
+            edgeRemoved = false;
             var ge = new GraphExport();
             //ge.Export(lowerBounds);
             //ge.Export(G);
@@ -167,10 +169,10 @@ namespace ASD
             var circulationFlow = MaxFlowGraphExtender.FordFulkersonDinicMaxFlow(seekFlowGraph, 0, 1, MaxFlowGraphExtender.OriginalDinicBlockingFlow);
 
             double sumFromSource = 0, sumToTarget = 0;
-            foreach (var e in seekFlowGraph.OutEdges(0))
-            {
-                sumFromSource += e.Weight;
-            }
+            //foreach (var e in seekFlowGraph.OutEdges(0))
+            //{
+            //    sumFromSource += e.Weight;
+            //}
             for (int v = 2; v < seekFlowGraph.VerticesCount; v++)
             {
                 foreach (var e in seekFlowGraph.OutEdges(v))
@@ -208,6 +210,11 @@ namespace ASD
                         c.AddEdge(v - 2, e.To - 2, e.Weight + edgeWeightsInLowerBounds[e.From - 2, e.To - 2]);
                     //c.AddEdge(v - 2, e.To - 2, e.Weight);
                 }
+            }
+
+            if(edgeRemoved)
+            {
+                c.AddEdge(target, source, edgeWeightsInLowerBounds[target, source]);
             }
 
             return c;  // zmienić
@@ -255,7 +262,12 @@ namespace ASD
                 }
             }
 
-            h.AddEdge(sink + 2, source + 2, double.MaxValue);
+            if (!h.AddEdge(sink + 2, source + 2, double.MaxValue))
+            {   //there is edge [sink, source] in G
+                h.DelEdge(sink + 2, source + 2);
+                h.AddEdge(sink + 2, source + 2, double.MaxValue);
+                edgeRemoved = true;
+            }
 
             return h;
         }
