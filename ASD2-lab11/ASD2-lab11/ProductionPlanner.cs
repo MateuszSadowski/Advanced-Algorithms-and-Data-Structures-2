@@ -167,6 +167,7 @@ namespace ASD
             (Graph, Graph) networks = BuildNetworksMaxProfitOnly(production, sales, storageInfo);
 
             int weeksCount = production.Length;
+            int salesmenCount = sales.GetLength(0);
             int n = networks.Item1.VerticesCount;
             int source = n - 3;
             int sink = n - 1;
@@ -176,36 +177,81 @@ namespace ASD
             //ge.Export(result.flow);
             //ge.Export(networks.Item1);
             double producedCount;
-            BuildWeeklyPlansMaxProfitOnly(result.flow, out producedCount);
+            WeeklyPlan[] plans = BuildWeeklyPlansMaxProfitOnly(result.flow, weeksCount, salesmenCount, out producedCount);
 
 
-            weeklyPlan = null;
+            weeklyPlan = plans;
             return new PlanData {Quantity = (int)producedCount, Value = -result.cost};
         }
 
-        internal SimpleWeeklyPlan[] BuildWeeklyPlansMaxProfitOnly(Graph flow, out double producedCount)
+        internal WeeklyPlan[] BuildWeeklyPlansMaxProfitOnly(Graph flow, int weeksCount, int salesmenCount, out double producedCount)
         {
             //var ge = new GraphExport();
             //ge.Export(flow);
             int n = flow.VerticesCount;
+            var plans = new WeeklyPlan[weeksCount];
             double produced = 0;
-            foreach (var e in flow.OutEdges(n - 2))
+            //foreach (var e in flow.OutEdges(n - 2))
+            //{
+            //    if (e.To == n - 1)
+            //        continue;
+
+            //    produced += e.Weight;
+            //    plans[e.From].UnitsProduced = (int)e.Weight;
+            //}
+
+            int factory = n - 2;
+            int sink = n - 1;
+
+            for (int week = 0; week < weeksCount; week++)
             {
-                if (e.To == n - 1)
-                    continue;
-                produced += e.Weight;
+                plans[week].UnitsSold = new int[salesmenCount];
             }
 
+            for (int v = 0; v < n - 1; v++)
+            {
+                foreach (var e in flow.OutEdges(v))
+                {
+                    //production
+                    if (e.From == factory)
+                    {
+                        if (e.To == sink)
+                            continue;
+
+                        int week = e.To;
+                        plans[week].UnitsProduced = (int)e.Weight;
+                        produced += (int)e.Weight;
+                    }
+
+                    //sales
+                    else if (e.To == sink)
+                    {
+                        if (e.From == factory)
+                            continue;
+
+                        int week = (e.From - weeksCount) / salesmenCount;
+                        int salesmen = (e.From - weeksCount) % salesmenCount;
+                        plans[week].UnitsSold[salesmen] = (int)e.Weight;
+                    }
+
+                    //storage
+                    else if (e.From < weeksCount && e.To < weeksCount)
+                    {
+                        int week = e.From;
+                        plans[week].UnitsStored = (int)e.Weight;
+                    }
+                }
+            }
 
             producedCount = produced;
-            return null;
+            return plans;
         }
 
         internal (Graph, Graph) BuildNetworksMaxProfitOnly(PlanData[] production, PlanData[,] sales, PlanData storageInfo)
         {
             int weeksCount = production.Length;
-            int salesmansCount = sales.GetLength(0);
-            int n = weeksCount * salesmansCount + weeksCount + 2 + 1;
+            int salesmenCount = sales.GetLength(0);
+            int n = weeksCount * salesmenCount + weeksCount + 2 + 1;
             var quantityNetwork = new AdjacencyListsGraph<SimpleAdjacencyList>(true, n);
             var costNetwork = new AdjacencyListsGraph<SimpleAdjacencyList>(true, n);
 
@@ -216,10 +262,10 @@ namespace ASD
             //var extraVertices = new int[weeksCount];
             //for (int week = 0; week < weeksCount; week++)
             //    extraVertices[week] = weeksCount + week;
-            var salesmanInWeek = new int[weeksCount, salesmansCount];
+            var salesmanInWeek = new int[weeksCount, salesmenCount];
             for (int week = 0; week < weeksCount; week++)
-                for (int salesman = 0; salesman < salesmansCount; salesman++)
-                    salesmanInWeek[week, salesman] = weeksCount + week * salesmansCount + salesman;
+                for (int salesman = 0; salesman < salesmenCount; salesman++)
+                    salesmanInWeek[week, salesman] = weeksCount + week * salesmenCount + salesman;
 
             int maxSaleValue = 0;
             int maxProduction = 0;
@@ -231,7 +277,7 @@ namespace ASD
                 costNetwork.AddEdge(factory, week, production[week].Value);
                 maxProduction += production[week].Quantity;
 
-                for (int salesman = 0; salesman < salesmansCount; salesman++)
+                for (int salesman = 0; salesman < salesmenCount; salesman++)
                 {
                     //from factory to salesman
                     quantityNetwork.AddEdge(week, salesmanInWeek[week, salesman], Int32.MaxValue);
