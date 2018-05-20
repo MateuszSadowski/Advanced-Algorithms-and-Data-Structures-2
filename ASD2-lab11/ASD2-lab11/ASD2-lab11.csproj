@@ -35,7 +35,7 @@
   <ItemGroup>
     <Reference Include="Graph, Version=7.1.1.0, Culture=neutral, PublicKeyToken=321cc63a7b3f4ab0, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\Graph\Graph.dll</HintPath>
+      <HintPath>..\..\..\..\Downloads\asd\Graph (1)\Graph.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -46,7 +46,7 @@
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Xml" />
     <Reference Include="TestSet">
-      <HintPath>..\..\..\Graph\TestSet.dll</HintPath>
+      <HintPath>..\..\..\..\Downloads\TestSet\TestSet.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>

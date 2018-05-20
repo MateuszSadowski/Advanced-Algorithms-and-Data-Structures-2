@@ -52,7 +52,7 @@ namespace ASD
             int source = n - 2;
             int sink = n - 1;
 
-            var result = MinCostFlowGraphExtender.MinCostFlow(networks.Item1, networks.Item2, source, sink);
+            var result = MinCostFlowGraphExtender.MinCostFlow(networks.Item1, networks.Item2, source, sink, true, MaxFlowGraphExtender.PushRelabelMaxFlow, MaxFlowGraphExtender.MKMBlockingFlow, true);
 
             weeklyPlan = BuildWeeklyPlans(result.flow);
             return new PlanData {Quantity = (int)result.value, Value = -result.cost};
@@ -170,6 +170,7 @@ namespace ASD
             int source = n - 3;
             int sink = n - 1;
 
+            //var result = MinCostFlowGraphExtender.MinCostFlow(networks.Item1, networks.Item2, source, sink, true, MaxFlowGraphExtender.PushRelabelMaxFlow, MaxFlowGraphExtender.MKMBlockingFlow, true);
             var result = MinCostFlowGraphExtender.MinCostFlow(networks.Item1, networks.Item2, source, sink);
             double producedCount;
             WeeklyPlan[] plans = BuildWeeklyPlansMaxProfitOnly(result.flow, weeksCount, salesmenCount, out producedCount);
