@@ -47,7 +47,8 @@ namespace ASD
         {
             (Graph, Graph) networks = BuildNetworks(production, sales, storageInfo);
 
-            int weeksCount = production.Length;
+            int weeksCount = CheckArgumentPositive(production.Length);
+            CheckArgumentArraysSameSize(production.Length, sales.Length);
             int n = weeksCount + 2;
             int source = n - 2;
             int sink = n - 1;
@@ -70,18 +71,18 @@ namespace ASD
             for (int week = 0; week < weeksCount; week++)
             {
                 //production
-                quantityNetwork.AddEdge(source, week, production[week].Quantity);
-                costNetwork.AddEdge(source, week, production[week].Value);
+                quantityNetwork.AddEdge(source, week, CheckArgumentNonNegative(production[week].Quantity));
+                costNetwork.AddEdge(source, week, CheckArgumentNonNegative(production[week].Value));
 
                 //sales
-                quantityNetwork.AddEdge(week, sink, sales[week].Quantity);
-                costNetwork.AddEdge(week, sink, -sales[week].Value);  //cost < 0 => profit
+                quantityNetwork.AddEdge(week, sink, CheckArgumentNonNegative(sales[week].Quantity));
+                costNetwork.AddEdge(week, sink, -CheckArgumentNonNegative(sales[week].Value));  //cost < 0 => profit
 
                 //storage
                 if(week < weeksCount - 1)
                 {
-                    quantityNetwork.AddEdge(week, week + 1, storageInfo.Quantity);
-                    costNetwork.AddEdge(week, week + 1, storageInfo.Value);
+                    quantityNetwork.AddEdge(week, week + 1, CheckArgumentNonNegative(storageInfo.Quantity));
+                    costNetwork.AddEdge(week, week + 1, CheckArgumentNonNegative(storageInfo.Value));
                 }
             }
 
@@ -164,8 +165,9 @@ namespace ASD
         {
             (Graph, Graph) networks = BuildNetworksMaxProfitOnly(production, sales, storageInfo);
 
-            int weeksCount = production.Length;
-            int salesmenCount = sales.GetLength(0);
+            int weeksCount = CheckArgumentPositive(production.Length);
+            int salesmenCount = CheckArgumentPositive(sales.GetLength(0));
+            CheckArgumentArraysSameSize(production.Length, sales.GetLength(1));
             int n = networks.Item1.VerticesCount;
             int source = n - 3;
             int sink = n - 1;
@@ -244,22 +246,22 @@ namespace ASD
             for (int week = 0; week < weeksCount; week++)
             {
                 //production
-                quantityNetwork.AddEdge(factory, week, production[week].Quantity);
-                costNetwork.AddEdge(factory, week, production[week].Value);
+                quantityNetwork.AddEdge(factory, week, CheckArgumentNonNegative(production[week].Quantity));
+                costNetwork.AddEdge(factory, week, CheckArgumentNonNegative(production[week].Value));
                 maxProduction += production[week].Quantity;
 
                 for (int salesman = weeksCount; salesman < weeksCount + salesmenCount; salesman++)
                 {
                     //from factory to salesman
-                    quantityNetwork.AddEdge(week, salesman, sales[salesman - weeksCount, week].Quantity);
-                    costNetwork.AddEdge(week, salesman, -sales[salesman - weeksCount, week].Value);
+                    quantityNetwork.AddEdge(week, salesman, CheckArgumentNonNegative(sales[salesman - weeksCount, week].Quantity));
+                    costNetwork.AddEdge(week, salesman, -CheckArgumentNonNegative(sales[salesman - weeksCount, week].Value));
                 }
 
                 //storage
                 if (week < weeksCount - 1)
                 {
-                    quantityNetwork.AddEdge(week, week + 1, storageInfo.Quantity);
-                    costNetwork.AddEdge(week, week + 1, storageInfo.Value);
+                    quantityNetwork.AddEdge(week, week + 1, CheckArgumentNonNegative(storageInfo.Quantity));
+                    costNetwork.AddEdge(week, week + 1, CheckArgumentNonNegative(storageInfo.Value));
                 }
             }
 
@@ -280,5 +282,36 @@ namespace ASD
 
             return (quantityNetwork, costNetwork);
         }
+
+        internal int CheckArgumentPositive(int arg)
+        {
+            if (arg <= 0)
+                throw new ArgumentException();
+            else
+                return arg;
+        }
+
+        internal void CheckArgumentArraysSameSize(int arg1, int arg2)
+        {
+            if (arg1 != arg2)
+                throw new ArgumentException();
+        }
+
+        internal int CheckArgumentNonNegative(int arg)
+        {
+            if (arg < 0)
+                throw new ArgumentException();
+            else
+                return arg;
+        }
+
+        internal double CheckArgumentNonNegative(double arg)
+        {
+            if (arg < 0)
+                throw new ArgumentException();
+            else
+                return arg;
+        }
+
     }
 }
