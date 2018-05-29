@@ -156,6 +156,18 @@ namespace asd2
             a2 = (s2.p1.y - s2.p2.y) / (s2.p1.x - s2.p2.x);
             b2 = s2.p1.y - a2 * s2.p1.x;
 
+            if (a1 == a2)
+            {   //parallel, common end
+                if (s1.p1.y == s2.p1.y)
+                    return new Point(s1.p1.x, s1.p1.y);
+                else if (s1.p1.y == s2.p2.y)
+                    return new Point(s1.p1.x, s1.p1.y);
+                else if (s1.p2.y == s2.p1.y)
+                    return new Point(s1.p2.x, s1.p2.y);
+                else if (s1.p2.y == s2.p2.y)
+                    return new Point(s1.p2.x, s1.p2.y);
+            }
+
             x = (b2 - b1) / (a1 - a2);
             y = a1 * x + b1;
 
@@ -171,9 +183,131 @@ namespace asd2
         /// <returns>Informacja czy istnieje przejazd między dzielnicami</returns>
         public bool CheckDistricts(Street[] streets, Point[] district1, Point[] district2, out List<int> path, out List<Point> intersections)
         {
+            var district1Edges = new List<Street>();
+            var district2Edges = new List<Street>();
+
+            for (int i = 0; i < district1.Length - 1; i++)
+            {
+                district1Edges.Add(new Street(district1[i], district1[i + 1]));
+            }
+
+            for (int i = 0; i < district2.Length - 1; i++)
+            {
+                district2Edges.Add(new Street(district2[i], district2[i + 1]));
+            }
+
+            var streetsCrossingDistrict1 = new List<int>();
+            var streetsCrossingDistrict2 = new List<int>();
+
+            for (int i = 0; i < streets.Length; i++)
+            {
+                foreach (var edge in district1Edges)
+                {
+                    if (1 == CheckIntersection(streets[i], edge))
+                        streetsCrossingDistrict1.Add(i);
+                }
+
+                foreach (var edge in district2Edges)
+                {
+                    if (1 == CheckIntersection(streets[i], edge))
+                        streetsCrossingDistrict2.Add(i);
+                }
+            }
+
+            if (streetsCrossingDistrict1.Count == 0 || streetsCrossingDistrict2.Count == 0)
+            {
+                path = new List<int>();
+                intersections = new List<Point>();
+                return false;
+            }
+
+            int[] pairsToCheck1 = new int[streetsCrossingDistrict1.Count * streetsCrossingDistrict2.Count];
+            int[] pairsToCheck2 = new int[streetsCrossingDistrict1.Count * streetsCrossingDistrict2.Count];
+
+            int k = 0;
+            foreach (var street1 in streetsCrossingDistrict1)
+            {
+                foreach (var street2 in streetsCrossingDistrict2)
+                {
+                    pairsToCheck1[k] = street1;
+                    pairsToCheck2[k] = street2;
+                    k++;
+                }
+            }
+
+            bool[] edgesConnected = CheckStreetsPairs(streets, pairsToCheck1, pairsToCheck2);
+
+            bool isPossibleToCrossBetweenDistricts = false;
+            foreach (var isPossible in edgesConnected)
+            {
+                if (isPossible)
+                    isPossibleToCrossBetweenDistricts = true;
+            }
+            if (!isPossibleToCrossBetweenDistricts)
+            {
+                path = new List<int>();
+                intersections = new List<Point>();
+                return false;
+            }
+
+            var graph = new AdjacencyListsGraph<SimpleAdjacencyList>(false, streets.Length);
+
+            for (int i = 0; i < streets.Length; i++)
+            {
+                for (int j = 0; j < streets.Length; j++)
+                {
+                    if (1 == CheckIntersection(streets[i], streets[j]))
+                        graph.AddEdge(i, j);
+                }
+            }
+
+            Edge[] shortestPath = null;
+            double shortestDist = double.MaxValue;
+            PathsInfo[] pathsInfos = null;
+            int singleStreetPath = -1;
+
+            for (int i = 0; i < streetsCrossingDistrict1.Count; i++)
+            {
+                var street1 = streetsCrossingDistrict1[i];
+                ShortestPathsGraphExtender.DijkstraShortestPaths(graph, street1, out pathsInfos);
+                for (int j = 0; j < streetsCrossingDistrict2.Count; j++)
+                {
+                    var street2 = streetsCrossingDistrict2[j];
+                    if (!pathsInfos[street2].Dist.IsNaN())
+                    {
+                        if (pathsInfos[street2].Dist == 0)
+                            singleStreetPath = street1;
+
+                        if(shortestDist > pathsInfos[street2].Dist)
+                        {
+                            shortestPath = PathsInfo.ConstructPath(street1, street2, pathsInfos);
+                            shortestDist = pathsInfos[street2].Dist;
+                        }
+                    }
+                }
+            }
+
             path = new List<int>();
+
+            if (singleStreetPath != -1)
+                path.Add(singleStreetPath);
+
+            if(shortestPath.Length > 0)
+            {
+                path.Add(shortestPath[0].From);
+                for (int i = 0; i < shortestPath.Length; i++)
+                {
+                    path.Add(shortestPath[i].To);
+                }
+            }
+
             intersections = new List<Point>();
-            return false;
+            for(int i = 0; i < path.Count - 1; i ++)
+            {
+                intersections.Add(GetIntersectionPoint(streets[path[i]], streets[path[i + 1]]));
+            }
+           
+            return true;
         }
 
     }
