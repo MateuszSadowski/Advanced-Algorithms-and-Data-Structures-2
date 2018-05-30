@@ -190,11 +190,15 @@ namespace asd2
             {
                 district1Edges.Add(new Street(district1[i], district1[i + 1]));
             }
+            if(district1.Length > 2)
+                district1Edges.Add(new Street(district1[district1.Length - 1], district1[0]));
 
             for (int i = 0; i < district2.Length - 1; i++)
             {
                 district2Edges.Add(new Street(district2[i], district2[i + 1]));
             }
+            if (district2.Length > 2)
+                district2Edges.Add(new Street(district2[district2.Length - 1], district2[0]));
 
             var streetsCrossingDistrict1 = new List<int>();
             var streetsCrossingDistrict2 = new List<int>();
@@ -204,13 +208,19 @@ namespace asd2
                 foreach (var edge in district1Edges)
                 {
                     if (1 == CheckIntersection(streets[i], edge))
+                    {
                         streetsCrossingDistrict1.Add(i);
+                        break;
+                    }
                 }
 
                 foreach (var edge in district2Edges)
                 {
                     if (1 == CheckIntersection(streets[i], edge))
+                    {
                         streetsCrossingDistrict2.Add(i);
+                        break;
+                    }
                 }
             }
 
@@ -250,7 +260,7 @@ namespace asd2
                 return false;
             }
 
-            var graph = new AdjacencyListsGraph<SimpleAdjacencyList>(false, streets.Length);
+            var graph = new AdjacencyListsGraph<AVLAdjacencyList>(false, streets.Length);
 
             for (int i = 0; i < streets.Length; i++)
             {
@@ -266,26 +276,48 @@ namespace asd2
             PathsInfo[] pathsInfos = null;
             int singleStreetPath = -1;
 
-            for (int i = 0; i < streetsCrossingDistrict1.Count; i++)
-            {
-                var street1 = streetsCrossingDistrict1[i];
-                ShortestPathsGraphExtender.DijkstraShortestPaths(graph, street1, out pathsInfos);
-                for (int j = 0; j < streetsCrossingDistrict2.Count; j++)
+            if(streetsCrossingDistrict1.Count <= streetsCrossingDistrict2.Count)
+                for (int i = 0; i < streetsCrossingDistrict1.Count; i++)
                 {
-                    var street2 = streetsCrossingDistrict2[j];
-                    if (!pathsInfos[street2].Dist.IsNaN())
+                    var street1 = streetsCrossingDistrict1[i];
+                    ShortestPathsGraphExtender.DijkstraShortestPaths(graph, street1, out pathsInfos);
+                    for (int j = 0; j < streetsCrossingDistrict2.Count; j++)
                     {
-                        if (pathsInfos[street2].Dist == 0)
-                            singleStreetPath = street1;
-
-                        if(shortestDist > pathsInfos[street2].Dist)
+                        var street2 = streetsCrossingDistrict2[j];
+                        if (!pathsInfos[street2].Dist.IsNaN())
                         {
-                            shortestPath = PathsInfo.ConstructPath(street1, street2, pathsInfos);
-                            shortestDist = pathsInfos[street2].Dist;
+                            if (pathsInfos[street2].Dist == 0)
+                                singleStreetPath = street1;
+
+                            if(shortestDist > pathsInfos[street2].Dist)
+                            {
+                                shortestPath = PathsInfo.ConstructPath(street1, street2, pathsInfos);
+                                shortestDist = pathsInfos[street2].Dist;
+                            }
                         }
                     }
                 }
-            }
+            else
+                for (int i = 0; i < streetsCrossingDistrict2.Count; i++)
+                {
+                    var street1 = streetsCrossingDistrict2[i];
+                    ShortestPathsGraphExtender.DijkstraShortestPaths(graph, street1, out pathsInfos);
+                    for (int j = 0; j < streetsCrossingDistrict1.Count; j++)
+                    {
+                        var street2 = streetsCrossingDistrict1[j];
+                        if (!pathsInfos[street2].Dist.IsNaN())
+                        {
+                            if (pathsInfos[street2].Dist == 0)
+                                singleStreetPath = street1;
+
+                            if (shortestDist > pathsInfos[street2].Dist)
+                            {
+                                shortestPath = PathsInfo.ConstructPath(street1, street2, pathsInfos);
+                                shortestDist = pathsInfos[street2].Dist;
+                            }
+                        }
+                    }
+                }
 
             path = new List<int>();
 
